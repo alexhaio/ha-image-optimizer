@@ -325,6 +325,12 @@ class OptimizerCliCommand {
 	 *
 	 * ## OPTIONS
 	 *
+	 * [--skip-scanned]
+	 * : Skip media attachments that already have cached audit results.
+	 *
+	 * [--reset]
+	 * : Reset and clear the audit cache before scanning.
+	 *
 	 * [--filter=<all|unattached|attached|used>]
 	 * : Filter displayed items (default: unattached).
 	 *
@@ -334,6 +340,8 @@ class OptimizerCliCommand {
 	 * ## EXAMPLES
 	 *
 	 *     wp ha-optimizer audit
+	 *     wp ha-optimizer audit --skip-scanned
+	 *     wp ha-optimizer audit --reset
 	 *     wp ha-optimizer audit --filter=all
 	 *     wp ha-optimizer audit --format=json
 	 *
@@ -344,15 +352,36 @@ class OptimizerCliCommand {
 	 * @return void
 	 */
 	public function audit( array $args, array $assoc_args ): void {
-		$queue = MediaAuditor::get_audit_queue();
+		$skip_scanned = ! empty( $assoc_args['skip-scanned'] );
+		$reset        = ! empty( $assoc_args['reset'] );
+
+		if ( $reset ) {
+			MediaAuditor::clear_results();
+			WP_CLI::line( 'Audit-Cache wurde zurückgesetzt.' );
+		}
+
+		$queue = MediaAuditor::get_audit_queue( $skip_scanned );
 		$total = count( $queue );
 
 		if ( 0 === $total ) {
-			WP_CLI::success( 'Keine Medien zum Scannen vorhanden.' );
+			if ( $skip_scanned ) {
+				$cached       = MediaAuditor::get_cached_results();
+				$cached_count = ! empty( $cached['items'] ) ? count( $cached['items'] ) : 0;
+				WP_CLI::success( sprintf( 'Alle Medien (%d) wurden bereits gescannt. Keine ungescannten Dateien vorhanden. Verwende --reset für einen erneuten Komplettscan.', $cached_count ) );
+			} else {
+				WP_CLI::success( 'Keine Medien zum Scannen vorhanden.' );
+			}
 			return;
 		}
 
-		WP_CLI::line( sprintf( 'Scanne %d Medien-Anhänge...', $total ) );
+		if ( $skip_scanned ) {
+			$cached       = MediaAuditor::get_cached_results();
+			$cached_count = ! empty( $cached['items'] ) ? count( $cached['items'] ) : 0;
+			WP_CLI::line( sprintf( 'Scanne %d ungescannte Medien-Anhänge (%d bereits im Cache übersprungen)...', $total, $cached_count ) );
+		} else {
+			WP_CLI::line( sprintf( 'Scanne %d Medien-Anhänge...', $total ) );
+		}
+
 		$progress = \WP_CLI\Utils\make_progress_bar( 'Analysiere Verwendung', $total );
 
 		$results = [];
@@ -362,23 +391,26 @@ class OptimizerCliCommand {
 		}
 		$progress->finish();
 
-		MediaAuditor::update_cached_results( $results );
+		$summary = MediaAuditor::update_cached_results( $results );
 
 		$filter = $assoc_args['filter'] ?? 'unattached';
 		$format = $assoc_args['format'] ?? 'table';
 
-		$filtered = array_filter( $results, function ( $item ) use ( $filter ) {
+		// Display items matching filter (from full cached results)
+		$all_items = $summary['items'] ?? [];
+
+		$filtered = array_filter( $all_items, function ( $item ) use ( $filter ) {
 			if ( 'all' === $filter ) {
 				return true;
 			}
 			if ( 'unattached' === $filter ) {
-				return MediaAuditor::STATUS_UNATTACHED_UNUSED === $item['status'];
+				return MediaAuditor::STATUS_UNATTACHED_UNUSED === ( $item['status'] ?? '' );
 			}
 			if ( 'attached' === $filter ) {
-				return MediaAuditor::STATUS_ATTACHED_UNUSED === $item['status'];
+				return MediaAuditor::STATUS_ATTACHED_UNUSED === ( $item['status'] ?? '' );
 			}
 			if ( 'used' === $filter ) {
-				return MediaAuditor::STATUS_USED === $item['status'];
+				return MediaAuditor::STATUS_USED === ( $item['status'] ?? '' );
 			}
 			return true;
 		} );
@@ -398,7 +430,7 @@ class OptimizerCliCommand {
 			$table_data[] = [
 				'ID'         => $f['id'],
 				'Datei'      => $f['filename'],
-				'Speicher'   => $f['disk_human'],
+				'Speicher'   => $f['disk_human'] ?? SizeGuard::format_size( (int) ( $f['disk_bytes'] ?? 0 ), 1 ),
 				'Status'     => $f['status'],
 				'Referenzen' => $ref_text,
 			];
@@ -418,10 +450,14 @@ class OptimizerCliCommand {
 	 * [--yes]
 	 * : Proceed without interactive confirmation prompt.
 	 *
+	 * [--from-cache]
+	 * : Use existing cached audit results instead of re-scanning.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp ha-optimizer clean-orphans
 	 *     wp ha-optimizer clean-orphans --yes
+	 *     wp ha-optimizer clean-orphans --from-cache --yes
 	 *     wp ha-optimizer clean-orphans --force --yes
 	 *
 	 * @subcommand clean-orphans
@@ -431,17 +467,27 @@ class OptimizerCliCommand {
 	 * @return void
 	 */
 	public function clean_orphans( array $args, array $assoc_args ): void {
-		$force = ! empty( $assoc_args['force'] );
-		$yes   = ! empty( $assoc_args['yes'] );
+		$force      = ! empty( $assoc_args['force'] );
+		$yes        = ! empty( $assoc_args['yes'] );
+		$from_cache = ! empty( $assoc_args['from-cache'] );
 
-		$queue = MediaAuditor::get_audit_queue();
 		$orphans = [];
 
-		WP_CLI::line( 'Ermittle verwaiste Medien...' );
-		foreach ( $queue as $id ) {
-			$audit = MediaAuditor::audit_attachment( $id );
-			if ( MediaAuditor::STATUS_UNATTACHED_UNUSED === $audit['status'] ) {
-				$orphans[] = $audit;
+		if ( $from_cache ) {
+			$cached = MediaAuditor::get_cached_results();
+			foreach ( $cached['items'] ?? [] as $item ) {
+				if ( MediaAuditor::STATUS_UNATTACHED_UNUSED === ( $item['status'] ?? '' ) ) {
+					$orphans[] = $item;
+				}
+			}
+		} else {
+			$queue = MediaAuditor::get_audit_queue();
+			WP_CLI::line( 'Ermittle verwaiste Medien...' );
+			foreach ( $queue as $id ) {
+				$audit = MediaAuditor::audit_attachment( $id );
+				if ( MediaAuditor::STATUS_UNATTACHED_UNUSED === $audit['status'] ) {
+					$orphans[] = $audit;
+				}
 			}
 		}
 

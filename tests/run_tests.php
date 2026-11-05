@@ -1083,6 +1083,71 @@ namespace HA_Image_Optimizer_Tests {
 			MediaAuditor::clear_results();
 			$cleared = MediaAuditor::get_cached_results();
 			$this->assert( empty( $cleared['items'] ), 'Audit cache cleared successfully' );
+
+			// Test Skip Scanned Media (Incremental Audit Queue & Pruning)
+			// 1. Initial queue with skip_scanned=false and skip_scanned=true on empty cache
+			$allQueue = MediaAuditor::get_audit_queue( false );
+			$this->assert( [ 1, 2, 3 ] === $allQueue, 'Full queue returns all IDs [1, 2, 3]' );
+
+			$emptySkipQueue = MediaAuditor::get_audit_queue( true );
+			$this->assert( [ 1, 2, 3 ] === $emptySkipQueue, 'Empty cache skip_scanned returns all IDs' );
+
+			// 2. Pre-populate cache with ID 2 and an obsolete deleted ID 999
+			MediaAuditor::update_cached_results( [
+				[
+					'id'         => 2,
+					'filename'   => 'already_scanned.jpg',
+					'status'     => MediaAuditor::STATUS_USED,
+					'disk_bytes' => 30000,
+					'references' => [ 'Beitragsbild' ],
+				],
+				[
+					'id'         => 999,
+					'filename'   => 'deleted_file.jpg',
+					'status'     => MediaAuditor::STATUS_UNATTACHED_UNUSED,
+					'disk_bytes' => 15000,
+					'references' => [],
+				],
+			] );
+
+			// 3. Incremental queue should prune obsolete ID 999 and skip already scanned ID 2
+			$incrementalQueue = MediaAuditor::get_audit_queue( true );
+			$this->assert( [ 1, 3 ] === $incrementalQueue, 'Incremental queue skips cached ID 2 and returns [1, 3]' );
+
+			$cachedAfterPrune = MediaAuditor::get_cached_results();
+			$this->assert( isset( $cachedAfterPrune['items'][2] ), 'Cached valid attachment 2 preserved' );
+			$this->assert( ! isset( $cachedAfterPrune['items'][999] ), 'Deleted attachment 999 automatically pruned from cache' );
+
+			// 4. Test delete_attachment hook removes attachment from cached index
+			add_action( 'delete_attachment', [ MediaAuditor::class, 'remove_from_cached_results' ] );
+			do_action( 'delete_attachment', 2 );
+			$cachedAfterDeleteHook = MediaAuditor::get_cached_results();
+			$this->assert( ! isset( $cachedAfterDeleteHook['items'][2] ), 'delete_attachment action hook removes item from cache' );
+
+			// 5. Test incremental batch merge
+			MediaAuditor::update_cached_results( [
+				[
+					'id'         => 1,
+					'filename'   => 'img1.jpg',
+					'status'     => MediaAuditor::STATUS_USED,
+					'disk_bytes' => 10000,
+					'references' => [ 'Logo' ],
+				],
+			] );
+			MediaAuditor::update_cached_results( [
+				[
+					'id'         => 3,
+					'filename'   => 'img3.jpg',
+					'status'     => MediaAuditor::STATUS_UNATTACHED_UNUSED,
+					'disk_bytes' => 20000,
+					'references' => [],
+				],
+			] );
+			$mergedCache = MediaAuditor::get_cached_results();
+			$this->assert( 2 === $mergedCache['counts']['total'], 'Merged cache contains both batch 1 and batch 2 items' );
+			$this->assert( isset( $mergedCache['items'][1], $mergedCache['items'][3] ), 'Both items 1 and 3 present in merged cache' );
+
+			MediaAuditor::clear_results();
 		}
 
 		private function testIndividualCompressionLevel(): void {

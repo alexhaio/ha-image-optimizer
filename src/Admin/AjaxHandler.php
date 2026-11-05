@@ -280,11 +280,25 @@ class AjaxHandler {
 			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
 		}
 
-		$queue = MediaAuditor::get_audit_queue();
+		$skip_scanned = ! empty( $_POST['skip_scanned'] );
+		$reset_cache  = ! empty( $_POST['reset_cache'] );
+
+		if ( $reset_cache || ( ! $skip_scanned && isset( $_POST['reset_cache'] ) && '1' === (string) $_POST['reset_cache'] ) ) {
+			MediaAuditor::clear_results();
+		}
+
+		$queue           = MediaAuditor::get_audit_queue( $skip_scanned );
+		$all_ids         = MediaAuditor::get_audit_queue( false );
+		$total_all       = count( $all_ids );
+		$cached          = MediaAuditor::get_cached_results();
+		$already_scanned = ! empty( $cached['items'] ) ? count( $cached['items'] ) : 0;
 
 		wp_send_json_success( [
-			'queue' => $queue,
-			'total' => count( $queue ),
+			'queue'           => $queue,
+			'total'           => count( $queue ),
+			'total_all'       => $total_all,
+			'already_scanned' => $already_scanned,
+			'skip_scanned'    => $skip_scanned,
 		] );
 	}
 

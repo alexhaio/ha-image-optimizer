@@ -56,9 +56,10 @@ class MediaAuditor {
 	/**
 	 * Get list of all eligible media attachment IDs to audit.
 	 *
+	 * @param bool $skip_scanned Whether to skip attachment IDs that already have cached audit results. Default false.
 	 * @return array<int>
 	 */
-	public static function get_audit_queue(): array {
+	public static function get_audit_queue( bool $skip_scanned = false ): array {
 		global $wpdb;
 
 		$sql = "SELECT ID FROM {$wpdb->posts}
@@ -68,7 +69,39 @@ class MediaAuditor {
 			ORDER BY ID DESC";
 
 		$results = $wpdb->get_col( $sql );
-		return array_map( 'absint', (array) $results );
+		$ids     = array_map( 'absint', (array) $results );
+
+		if ( ! $skip_scanned ) {
+			return $ids;
+		}
+
+		$cached = self::get_cached_results();
+		if ( empty( $cached['items'] ) || ! is_array( $cached['items'] ) ) {
+			return $ids;
+		}
+
+		// Prune any cached entries for attachments that no longer exist or are trashed
+		$existing_map  = array_flip( $ids );
+		$needs_pruning = false;
+		foreach ( array_keys( $cached['items'] ) as $cached_id ) {
+			$cached_id = (int) $cached_id;
+			if ( ! isset( $existing_map[ $cached_id ] ) ) {
+				unset( $cached['items'][ $cached_id ] );
+				$needs_pruning = true;
+			}
+		}
+		if ( $needs_pruning ) {
+			self::recalculate_and_save( $cached );
+		}
+
+		$scanned_map = array_flip( array_map( 'absint', array_keys( $cached['items'] ) ) );
+
+		return array_values(
+			array_filter(
+				$ids,
+				static fn( int $id ): bool => ! isset( $scanned_map[ $id ] )
+			)
+		);
 	}
 
 	/**

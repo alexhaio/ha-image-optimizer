@@ -16,6 +16,7 @@ use ha\ImageOptimizer\Admin\AdminPage;
 use ha\ImageOptimizer\Admin\MediaColumn;
 use ha\ImageOptimizer\Admin\AjaxHandler;
 use ha\ImageOptimizer\Cli\OptimizerCliCommand;
+use ha\ImageOptimizer\Auditor\MediaAuditor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -54,6 +55,9 @@ class Plugin {
 
 		// Hook media generation pipeline
 		add_filter( 'wp_generate_attachment_metadata', [ AttachmentProcessor::class, 'filter_generate_metadata' ], 10, 2 );
+
+		// Synchronize audit cache when attachments are deleted
+		add_action( 'delete_attachment', [ MediaAuditor::class, 'remove_from_cached_results' ] );
 
 		// Register WP-CLI commands
 		OptimizerCliCommand::register();

@@ -171,6 +171,10 @@ class AdminPage {
 					'confirm_trash' => esc_html__( 'Dieses Bild wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' ),
 					'confirm_bulk'  => esc_html__( 'Alle ausgewählten Bilder wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' ),
 					'trashed'       => esc_html__( 'In Papierkorb verschoben', 'ha-image-optimizer' ),
+					'resume_scan'   => esc_html__( 'Scan fortsetzen / Ungescannte prüfen', 'ha-image-optimizer' ),
+					'full_scan'     => esc_html__( 'Vollständigen Scan starten', 'ha-image-optimizer' ),
+					'start_scan'    => esc_html__( 'Scan jetzt starten', 'ha-image-optimizer' ),
+					'all_scanned'   => esc_html__( 'Alle Medien sind bereits geprüft! Keine ungescannten Dateien vorhanden.', 'ha-image-optimizer' ),
 				],
 			] );
 		}

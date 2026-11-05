@@ -95,9 +95,17 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 					<?php esc_html_e( 'Starte die Prüfung, um alle Bilder auf ihre tatsächliche Verwendung zu analysieren. Der Scan läuft schonend per AJAX im Hintergrund.', 'ha-image-optimizer' ); ?>
 				</p>
 			</div>
-			<div style="display: flex; gap: 8px;">
+			<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+				<?php
+				$has_cached = ! empty( $counts['total'] );
+				$btn_label  = $has_cached
+					? esc_html__( 'Scan fortsetzen / Ungescannte prüfen', 'ha-image-optimizer' )
+					: esc_html__( 'Scan jetzt starten', 'ha-image-optimizer' );
+				$btn_icon   = $has_cached ? '▶️' : '🔍';
+				?>
 				<button type="button" class="button button-primary button-hero" id="ha-io-btn-start-audit">
-					🔍 <?php esc_html_e( 'Scan jetzt starten', 'ha-image-optimizer' ); ?>
+					<span id="ha-io-btn-audit-icon"><?php echo $btn_icon; ?></span>
+					<span id="ha-io-btn-audit-text"><?php echo esc_html( $btn_label ); ?></span>
 				</button>
 				<?php if ( ! empty( $counts['total'] ) ) : ?>
 					<button type="button" class="button button-secondary" id="ha-io-btn-clear-audit">
@@ -105,6 +113,22 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 					</button>
 				<?php endif; ?>
 			</div>
+		</div>
+
+		<!-- Skip Scanned Media Option (Incremental Scan) -->
+		<div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+			<label for="ha-io-audit-skip-scanned" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; user-select: none;">
+				<input type="checkbox" id="ha-io-audit-skip-scanned" name="ha_io_audit_skip_scanned" value="1" <?php checked( $has_cached ); ?>>
+				<span>
+					⏩ <strong><?php esc_html_e( 'Bereits geprüfte Medien überspringen', 'ha-image-optimizer' ); ?></strong>
+					<span style="color: #666; font-weight: normal; margin-left: 4px;">
+						(<?php esc_html_e( 'Inkrementeller Scan / Fortsetzen – spart Zeit bei großen Mediatheken', 'ha-image-optimizer' ); ?>)
+					</span>
+				</span>
+			</label>
+			<span id="ha-io-audit-cached-badge" style="font-size: 12px; color: #0969da; background: #e7f3ff; padding: 4px 10px; border-radius: 12px; font-weight: 500; <?php echo empty( $counts['total'] ) ? 'display: none;' : ''; ?>">
+				ℹ️ <span id="ha-io-audit-cached-count"><?php echo (int) $counts['total']; ?></span> <?php esc_html_e( 'Medien aktuell im Cache', 'ha-image-optimizer' ); ?>
+			</span>
 		</div>
 
 		<!-- Live Progress Bar (Hidden by default) -->

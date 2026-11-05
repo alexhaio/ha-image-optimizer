@@ -9,8 +9,33 @@
 		let auditQueue = [];
 		let auditTotal = 0;
 		let auditProcessed = 0;
+		let alreadyScanned = 0;
 		let isRunning = false;
 		const batchSize = 15; // 15 attachments per batch query
+
+		function updateScanButtonLabel() {
+			if (isRunning) return;
+
+			const isSkip = $('#ha-io-audit-skip-scanned').is(':checked');
+			const cachedCount = parseInt($('#ha-io-audit-cached-count').text(), 10) || 0;
+
+			if (isSkip && cachedCount > 0) {
+				$('#ha-io-btn-audit-icon').text('▶️');
+				$('#ha-io-btn-audit-text').text(
+					(ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.resume_scan) ||
+					'Scan fortsetzen / Ungescannte prüfen'
+				);
+			} else {
+				$('#ha-io-btn-audit-icon').text('🔍');
+				$('#ha-io-btn-audit-text').text(
+					cachedCount > 0
+						? ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.full_scan) || 'Vollständigen Scan starten')
+						: ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.start_scan) || 'Scan jetzt starten')
+				);
+			}
+		}
+
+		$('#ha-io-audit-skip-scanned').on('change', updateScanButtonLabel);
 
 		// -------------------------------------------------------------
 		// 1. Start Audit Scan
@@ -22,42 +47,69 @@
 
 		function startAudit() {
 			isRunning = true;
+			const skipScanned = $('#ha-io-audit-skip-scanned').is(':checked');
+
 			$('#ha-io-btn-start-audit, #ha-io-btn-clear-audit').prop('disabled', true);
 			$('#ha-io-audit-progress-container').slideDown();
 			$('#ha-io-audit-progress-bar').css('width', '0%');
 			$('#ha-io-audit-progress-counts').text('0 / 0 (0%)');
-			$('#ha-io-audit-current-item').text(ha_io_audit_vars.i18n.scanning || 'Scanne Mediathek...');
+			$('#ha-io-audit-progress-status').text(
+				skipScanned ? 'Ermittle ungescannte Medien...' : 'Bereite Mediathek-Scan vor...'
+			);
+			$('#ha-io-audit-current-item').text(
+				(ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.scanning) || 'Scanne Mediathek...'
+			);
 
 			$.ajax({
 				url: ha_io_audit_vars.ajax_url,
 				method: 'POST',
 				data: {
 					action: 'ha_io_audit_get_queue',
-					nonce: ha_io_audit_vars.nonce
+					nonce: ha_io_audit_vars.nonce,
+					skip_scanned: skipScanned ? 1 : 0,
+					reset_cache: skipScanned ? 0 : 1
 				},
 				success: function (res) {
-					if (res.success && res.data.queue) {
+					if (res.success && res.data && typeof res.data.queue !== 'undefined') {
 						auditQueue = res.data.queue;
 						auditTotal = auditQueue.length;
 						auditProcessed = 0;
+						alreadyScanned = res.data.already_scanned || 0;
 
 						if (auditTotal === 0) {
-							$('#ha-io-audit-progress-status').text('Keine Medien gefunden.');
+							if (skipScanned && alreadyScanned > 0) {
+								$('#ha-io-audit-progress-status').text(
+									'✅ ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.all_scanned) || 'Alle Medien sind bereits geprüft!')
+								);
+								$('#ha-io-audit-current-item').text(
+									'Alle ' + alreadyScanned + ' Medien befinden sich im Cache. Deaktiviere das Überspringen oder leere den Cache für einen erneuten Komplettscan.'
+								);
+							} else {
+								$('#ha-io-audit-progress-status').text('Keine Medien gefunden.');
+								$('#ha-io-audit-current-item').text('');
+							}
 							$('#ha-io-audit-progress-bar').css('width', '100%');
 							finishAudit();
 							return;
 						}
 
-						// If starting fresh scan, empty table
-						$('#ha-io-audit-tbody').empty();
+						if (!skipScanned) {
+							// Fresh scan: empty table
+							$('#ha-io-audit-tbody').empty();
+						} else {
+							// Incremental scan: keep cached rows, only remove placeholder empty row
+							$('#ha-io-audit-empty-row').remove();
+						}
+
+						updateProgress();
 						processNextAuditBatch();
 					} else {
-						alert(res.data ? res.data.message : ha_io_audit_vars.i18n.error);
+						alert(res.data ? res.data.message : ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.error) || 'Fehler aufgetreten'));
 						finishAudit();
 					}
 				},
 				error: function () {
-					alert(ha_io_audit_vars.i18n.error);
+					alert((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.error) || 'Fehler aufgetreten');
 					finishAudit();
 				}
 			});
@@ -112,16 +164,40 @@
 		function updateProgress() {
 			const percent = auditTotal > 0 ? Math.min(100, Math.round((auditProcessed / auditTotal) * 100)) : 100;
 			$('#ha-io-audit-progress-bar').css('width', percent + '%');
-			$('#ha-io-audit-progress-counts').text(auditProcessed + ' / ' + auditTotal + ' (' + percent + '%)');
+
+			if (alreadyScanned > 0) {
+				$('#ha-io-audit-progress-counts').text(
+					auditProcessed + ' / ' + auditTotal + ' neu (' + alreadyScanned + ' im Cache: ' + percent + '%)'
+				);
+				$('#ha-io-audit-progress-status').text(
+					'Analysiere verbleibende ' + auditTotal + ' Medien (' + alreadyScanned + ' im Cache übersprungen)...'
+				);
+			} else {
+				$('#ha-io-audit-progress-counts').text(auditProcessed + ' / ' + auditTotal + ' (' + percent + '%)');
+				$('#ha-io-audit-progress-status').text('Analysiere Mediathek...');
+			}
 		}
 
 		function finishAudit() {
 			isRunning = false;
 			$('#ha-io-btn-start-audit, #ha-io-btn-clear-audit').prop('disabled', false);
-			$('#ha-io-audit-progress-status').text('🎉 ' + (ha_io_audit_vars.i18n.completed || 'Scan abgeschlossen!'));
+
+			const cachedCount = parseInt($('#ha-io-audit-cached-count').text(), 10) || 0;
+			$('#ha-io-audit-progress-status').text(
+				'🎉 ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.completed) || 'Scan abgeschlossen!')
+			);
 			$('#ha-io-audit-progress-bar').css('width', '100%');
-			$('#ha-io-audit-current-item').text('Alle ' + auditTotal + ' Medien wurden erfolgreich geprüft.');
+
+			if (alreadyScanned > 0 && auditTotal > 0) {
+				$('#ha-io-audit-current-item').text(
+					'Inkrementeller Scan beendet: ' + auditTotal + ' neue Medien geprüft (' + (cachedCount || (alreadyScanned + auditTotal)) + ' insgesamt im Cache).'
+				);
+			} else if (auditTotal > 0) {
+				$('#ha-io-audit-current-item').text('Alle ' + auditTotal + ' Medien wurden erfolgreich geprüft.');
+			}
+
 			applyFilters();
+			updateScanButtonLabel();
 		}
 
 		function updateMetricCards(summary) {
@@ -141,9 +217,17 @@
 			$('.count-unattached').text(counts.unattached_unused || 0);
 			$('.count-attached').text(counts.attached_unused || 0);
 			$('.count-used').text(counts.used || 0);
+
+			// Update cache badge
+			if (typeof counts.total !== 'undefined' && counts.total > 0) {
+				$('#ha-io-audit-cached-count').text(counts.total);
+				$('#ha-io-audit-cached-badge').fadeIn();
+			}
 		}
 
 		function renderAuditRow(item) {
+			$('#ha-io-audit-empty-row').remove();
+
 			// Remove existing row with same ID if exists
 			$('#ha-io-audit-tbody tr[data-id="' + item.id + '"]').remove();
 
