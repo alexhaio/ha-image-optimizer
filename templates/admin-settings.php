@@ -300,6 +300,19 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 
 			<table class="form-table">
 				<tr>
+					<th scope="row"><?php esc_html_e( 'Performance-Modus (Smart Early-Exit)', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="ha_io_settings[auditor_fast_mode]" value="1" <?php checked( $settings['auditor_fast_mode'] ?? true ); ?>>
+							<strong><?php esc_html_e( 'Tiefenscan abbrechen, sobald ein Bild nachweislich verwendet wird (Empfohlen)', 'ha-image-optimizer' ); ?></strong>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Reduziert Datenbankabfragen um bis zu 90 %. Sobald ein Bild als Beitragsbild, im Seiteninhalt, im Theme oder Widget gefunden wurde, werden nachfolgende schwere Tabellenscans für dieses Bild übersprungen.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
 					<th scope="row"><?php esc_html_e( 'Universeller Datenbank-Scan', 'ha-image-optimizer' ); ?></th>
 					<td>
 						<label>

@@ -211,6 +211,12 @@ namespace {
 		}
 	}
 
+	if ( ! function_exists( 'wp_load_alloptions' ) ) {
+		function wp_load_alloptions(): array {
+			return $GLOBALS['wp_test_options'] ?? [];
+		}
+	}
+
 	if ( ! function_exists( 'add_action' ) ) {
 		function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ): void {
 			$GLOBALS['wp_test_actions'][ $hook ][] = $callback;
@@ -546,6 +552,18 @@ namespace {
 				return [];
 			}
 			if ( str_contains( $query, '_thumbnail_id' ) ) {
+				if ( str_contains( $query, 'attachment_id' ) && str_contains( $query, 'IN (' ) ) {
+					$results = [];
+					if ( preg_match( '/\b1\b/', $query ) ) {
+						$results[] = (object) [
+							'attachment_id' => 1,
+							'ID'            => 42,
+							'post_title'    => 'Beispielbeitrag',
+							'post_type'     => 'post',
+						];
+					}
+					return $results;
+				}
 				if ( preg_match( '/meta_value\s*=\s*[\'"]?1\b/', $query ) ) {
 					return [
 						(object) [ 'ID' => 42, 'post_title' => 'Beispielbeitrag', 'post_type' => 'post' ],
@@ -589,6 +607,9 @@ namespace {
 					'wp_nextend2_smartslider3_sliders',
 					'wp_wpforms_entries',
 				];
+			}
+			if ( is_string( $query ) && str_contains( $query, 'SELECT DISTINCT meta_key FROM' ) ) {
+				return [ '_elementor_data' ];
 			}
 			return [ 1, 2, 3 ];
 		}
@@ -756,6 +777,7 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( 'smart' === $defaults['compression_sizes'], 'Default sub-size compression is smart' );
 			$this->assert( true === $defaults['backup_originals'], 'Default backup_originals is true' );
 			$this->assert( 'themes' === $defaults['custom_folders'], 'Default custom_folders is themes' );
+			$this->assert( true === $defaults['auditor_fast_mode'], 'Default auditor_fast_mode is true' );
 			$this->assert( true === $defaults['auditor_generic_db_scan'], 'Default auditor_generic_db_scan is true' );
 			$this->assert( 0 === $defaults['auditor_safety_buffer_days'], 'Default auditor_safety_buffer_days is 0' );
 
@@ -765,11 +787,13 @@ namespace HA_Image_Optimizer_Tests {
 				'max_width'               => 999999, // Too large
 				'custom_folders'          => "themes/my-theme\n../dangerous/path\nha-backups\nassets/images",
 				'optimize_custom_folders' => '1',
+				'auditor_fast_mode'       => '1',
 			];
 
 			$clean = Settings::sanitize( $dirty );
 			$this->assert( 'lossless' === $clean['compression_original'], 'Invalid compression level fell back to default' );
 			$this->assert( 2560 === $clean['max_width'], 'Out-of-bounds width clamped to 2560' );
+			$this->assert( true === $clean['auditor_fast_mode'], 'Auditor fast mode sanitized to boolean true' );
 			$this->assert( ! str_contains( $clean['custom_folders'], '..' ), 'Directory traversal path (..) stripped from custom_folders' );
 			$this->assert( ! str_contains( $clean['custom_folders'], 'ha-backups' ), 'Internal backup path excluded from custom_folders' );
 			$this->assert( str_contains( $clean['custom_folders'], 'themes/my-theme' ), 'Valid custom folder retained' );
@@ -927,8 +951,8 @@ namespace HA_Image_Optimizer_Tests {
 			$queue = MediaAuditor::get_audit_queue();
 			$this->assert( is_array( $queue ) && count( $queue ) === 3, 'MediaAuditor retrieved media queue' );
 
-			// Mock attachment 1: featured image found in post 42 and Smart Slider 3 slide
-			$auditUsed = MediaAuditor::audit_attachment( 1 );
+			// Mock attachment 1: featured image found in post 42 and Smart Slider 3 slide (exhaustive scan)
+			$auditUsed = MediaAuditor::audit_attachment( 1, [], false );
 			$this->assert( MediaAuditor::STATUS_USED === $auditUsed['status'], 'Detected used attachment with featured image reference' );
 			$this->assert( ! empty( $auditUsed['references'] ), 'Contains detailed reference labels' );
 			$this->assert( ! empty( $auditUsed['references'][0]['url'] ), 'Reference includes direct edit link' );
@@ -944,6 +968,21 @@ namespace HA_Image_Optimizer_Tests {
 				}
 			}
 			$this->assert( $hasSmartSlider, 'Detected Smart Slider 3 usage and generated direct editor link' );
+
+			// Test Smart Early-Exit (Performance Mode)
+			$auditFast = MediaAuditor::audit_attachment( 1, [], true );
+			$this->assert( MediaAuditor::STATUS_USED === $auditFast['status'], 'Fast mode detects used status' );
+			$this->assert( 1 === count( $auditFast['references'] ), 'Fast mode exits early after first confirmed reference' );
+
+			// Test Batch Pre-fetching
+			$prefetched = MediaAuditor::prefetch_batch_data( [ 1, 20 ] );
+			$this->assert( is_array( $prefetched['featured_posts'] ) && isset( $prefetched['featured_posts'][1] ), 'Prefetch batch data retrieved featured image for attachment 1' );
+
+			// Test In-Memory Autoloaded Options Scanner (0 SQL queries)
+			$GLOBALS['wp_test_options']['widget_custom_test'] = '{"imageId":777}';
+			$optRefs = MediaAuditor::search_autoloaded_options( 777, '2026/10/photo.jpg', 'photo.jpg' );
+			$this->assert( ! empty( $optRefs ), 'In-memory options scanner finds references in autoloaded options' );
+			$this->assert( str_contains( $optRefs[0]['label'], 'widget_custom_test' ), 'Options reference labels the option name correctly' );
 
 			// Test Universal Database Scanner (attachment 20 found in custom table wp_wpforms_entries)
 			$auditGeneric = MediaAuditor::audit_attachment( 20 );

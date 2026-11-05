@@ -44,6 +44,7 @@ class Settings {
 			'keep_exif'                    => false,
 			'optimize_custom_folders'      => true,
 			'custom_folders'               => 'themes',
+			'auditor_fast_mode'            => true,
 			'auditor_generic_db_scan'      => true,
 			'auditor_safety_buffer_days'   => 0,
 			'auditor_custom_tables'        => '',
@@ -157,6 +158,7 @@ class Settings {
 		$clean['custom_folders'] = implode( "\n", array_unique( $clean_folders ) );
 
 		// Auditor Settings
+		$clean['auditor_fast_mode']       = ! empty( $input['auditor_fast_mode'] );
 		$clean['auditor_generic_db_scan'] = ! empty( $input['auditor_generic_db_scan'] );
 
 		$safety_days = isset( $input['auditor_safety_buffer_days'] ) ? absint( $input['auditor_safety_buffer_days'] ) : $defaults['auditor_safety_buffer_days'];

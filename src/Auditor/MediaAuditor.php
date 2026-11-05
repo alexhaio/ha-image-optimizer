@@ -54,6 +54,13 @@ class MediaAuditor {
 	private static ?array $generic_custom_tables_cache = null;
 
 	/**
+	 * Cached existing builder meta keys in wp_postmeta.
+	 *
+	 * @var array<string>|null
+	 */
+	private static ?array $existing_builder_meta_keys = null;
+
+	/**
 	 * Get list of all eligible media attachment IDs to audit.
 	 *
 	 * @param bool $skip_scanned Whether to skip attachment IDs that already have cached audit results. Default false.
@@ -105,13 +112,237 @@ class MediaAuditor {
 	}
 
 	/**
-	 * Audit a single attachment ID.
+	 * Pre-fetch indexed relational data for a batch of attachment IDs to minimize SQL queries.
 	 *
-	 * @param int $attachment_id Attachment ID.
+	 * @param array<int> $attachment_ids List of attachment IDs.
+	 * @return array{featured_posts: array<int, array<object>>, term_thumbnails: array<int, array<object>>}
+	 */
+	public static function prefetch_batch_data( array $attachment_ids ): array {
+		global $wpdb;
+
+		$attachment_ids = array_values( array_filter( array_map( 'absint', $attachment_ids ) ) );
+		if ( empty( $attachment_ids ) ) {
+			return [
+				'featured_posts'  => [],
+				'term_thumbnails' => [],
+			];
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $attachment_ids ), '%d' ) );
+
+		// 1. Bulk Featured Image (_thumbnail_id)
+		$featured_sql = $wpdb->prepare(
+			"SELECT pm.meta_value AS attachment_id, p.ID, p.post_title, p.post_type 
+			FROM {$wpdb->postmeta} pm
+			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
+			WHERE pm.meta_key = '_thumbnail_id'
+			AND pm.meta_value IN ({$placeholders})
+			AND p.post_status != 'trash'",
+			...$attachment_ids
+		);
+		$featured_rows = (array) $wpdb->get_results( $featured_sql );
+
+		$featured_map = [];
+		foreach ( $featured_rows as $row ) {
+			$att_id = (int) ( $row->attachment_id ?? 0 );
+			if ( $att_id > 0 ) {
+				$featured_map[ $att_id ][] = $row;
+			}
+		}
+
+		// 2. Bulk Term Thumbnails (product_cat_thumbnail_id, thumbnail_id)
+		$term_map = [];
+		if ( ! empty( $wpdb->termmeta ) ) {
+			$term_sql = $wpdb->prepare(
+				"SELECT tm.meta_value AS attachment_id, t.term_id, t.name, tt.taxonomy 
+				FROM {$wpdb->termmeta} tm
+				INNER JOIN {$wpdb->terms} t ON (tm.term_id = t.term_id)
+				INNER JOIN {$wpdb->term_taxonomy} tt ON (t.term_id = tt.term_id)
+				WHERE tm.meta_key IN ('thumbnail_id', 'product_cat_thumbnail_id')
+				AND tm.meta_value IN ({$placeholders})",
+				...$attachment_ids
+			);
+			$term_rows = (array) $wpdb->get_results( $term_sql );
+
+			foreach ( $term_rows as $row ) {
+				$att_id = (int) ( $row->attachment_id ?? 0 );
+				if ( $att_id > 0 ) {
+					$term_map[ $att_id ][] = $row;
+				}
+			}
+		}
+
+		return [
+			'featured_posts'  => $featured_map,
+			'term_thumbnails' => $term_map,
+		];
+	}
+
+	/**
+	 * Search in-memory autoloaded options for image references (0 SQL queries).
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $rel_file Relative file path.
+	 * @param string $filename Basename of file.
+	 * @return array<array{label: string, url: string}>
+	 */
+	public static function search_autoloaded_options( int $attachment_id, string $rel_file, string $filename ): array {
+		if ( ! function_exists( 'wp_load_alloptions' ) ) {
+			return [];
+		}
+
+		$alloptions = wp_load_alloptions();
+		if ( empty( $alloptions ) || ! is_array( $alloptions ) ) {
+			return [];
+		}
+
+		$found_refs = [];
+		$id_str     = (string) $attachment_id;
+		$patterns   = [
+			'wp-image-' . $id_str,
+			'i:' . $id_str . ';',
+			'"id":' . $id_str,
+			'"imageId":' . $id_str,
+			'"image_id":' . $id_str,
+		];
+
+		if ( ! empty( $rel_file ) ) {
+			$patterns[] = $rel_file;
+		}
+
+		foreach ( $alloptions as $opt_name => $opt_val ) {
+			$opt_name = (string) $opt_name;
+			if (
+				str_starts_with( $opt_name, '_transient' ) ||
+				str_starts_with( $opt_name, '_site_transient' ) ||
+				str_contains( $opt_name, '_ha_io_' )
+			) {
+				continue;
+			}
+
+			if ( ! is_string( $opt_val ) ) {
+				if ( is_scalar( $opt_val ) ) {
+					$opt_val = (string) $opt_val;
+				} else {
+					continue;
+				}
+			}
+
+			foreach ( $patterns as $pat ) {
+				if ( str_contains( $opt_val, $pat ) ) {
+					$is_widget    = str_starts_with( $opt_name, 'widget_' );
+					$found_refs[] = [
+						'label' => $is_widget
+							? sprintf( __( 'WordPress Widget ("%s")', 'ha-image-optimizer' ), $opt_name )
+							: sprintf( __( 'WordPress Option ("%s")', 'ha-image-optimizer' ), $opt_name ),
+						'url'   => $is_widget ? self::safe_admin_url( 'widgets.php' ) : self::safe_admin_url( 'options-general.php' ),
+					];
+					break;
+				}
+			}
+
+			if ( count( $found_refs ) >= 3 ) {
+				break;
+			}
+		}
+
+		return $found_refs;
+	}
+
+	/**
+	 * Build standardized audit result array for an attachment.
+	 *
+	 * @param int                              $attachment_id Attachment ID.
+	 * @param string|false                     $file Attached file path.
+	 * @param string                           $filename File basename.
+	 * @param int                              $parent_id Post parent ID.
+	 * @param string                           $parent_title Post parent title.
+	 * @param string|false                     $thumb_url Thumbnail URL.
+	 * @param int                              $disk_bytes File size in bytes.
+	 * @param array<array{label: string, url: string}> $references Discovered references.
+	 * @param object                           $post Attachment post object.
 	 * @return array<string, mixed>
 	 */
-	public static function audit_attachment( int $attachment_id ): array {
+	private static function build_audit_result(
+		int $attachment_id,
+		$file,
+		string $filename,
+		int $parent_id,
+		string $parent_title,
+		$thumb_url,
+		int $disk_bytes,
+		array $references,
+		object $post
+	): array {
+		if ( function_exists( 'apply_filters' ) ) {
+			/**
+			 * Filter detected references for an audited attachment.
+			 *
+			 * @param array<array{label: string, url: string}> $references Detected references.
+			 * @param int                                      $attachment_id Attachment ID.
+			 * @param \WP_Post                                 $post Attachment post object.
+			 */
+			$references = (array) apply_filters( 'ha_io_audit_attachment_references', $references, $attachment_id, $post );
+		}
+
+		$deduped = [];
+		$seen    = [];
+		foreach ( $references as $ref ) {
+			$label = is_array( $ref ) ? ( $ref['label'] ?? '' ) : (string) $ref;
+			if ( ! empty( $label ) && ! isset( $seen[ $label ] ) ) {
+				$seen[ $label ] = true;
+				$deduped[]      = $ref;
+			}
+		}
+		$references = $deduped;
+
+		if ( ! empty( $references ) ) {
+			$status = self::STATUS_USED;
+		} elseif ( $parent_id > 0 ) {
+			$status = self::STATUS_ATTACHED_UNUSED;
+		} else {
+			$status = self::STATUS_UNATTACHED_UNUSED;
+		}
+
+		$reference_labels = array_map( function ( $r ) {
+			return is_array( $r ) ? ( $r['label'] ?? '' ) : (string) $r;
+		}, $references );
+
+		return [
+			'id'             => $attachment_id,
+			'filename'       => $filename,
+			'mime'           => $post->post_mime_type,
+			'thumb_url'      => (string) $thumb_url,
+			'date'           => get_the_date( 'Y-m-d H:i', $attachment_id ),
+			'parent_id'      => $parent_id,
+			'parent_title'   => $parent_title,
+			'parent_url'     => $parent_id > 0 ? self::safe_admin_url( 'post.php?post=' . $parent_id . '&action=edit' ) : '',
+			'disk_bytes'     => $disk_bytes,
+			'disk_human'     => SizeGuard::format_size( $disk_bytes, 1 ),
+			'status'         => $status,
+			'references'     => $references,
+			'reference_desc' => implode( ', ', $reference_labels ),
+			'scanned_at'     => time(),
+		];
+	}
+
+	/**
+	 * Audit a single attachment ID.
+	 *
+	 * @param int                  $attachment_id   Attachment ID.
+	 * @param array<string, mixed> $prefetched_data Pre-fetched batch data (optional).
+	 * @param bool|null            $early_exit      Whether to early exit once usage is confirmed (null = setting).
+	 * @return array<string, mixed>
+	 */
+	public static function audit_attachment( int $attachment_id, array $prefetched_data = [], ?bool $early_exit = null ): array {
 		global $wpdb;
+
+		if ( null === $early_exit ) {
+			$early_exit = (bool) Settings::get( 'auditor_fast_mode', true );
+		}
+		if ( function_exists( 'apply_filters' ) ) {
+			$early_exit = (bool) apply_filters( 'ha_io_audit_early_exit', $early_exit, $attachment_id );
+		}
 
 		$attachment_id = absint( $attachment_id );
 		$post          = get_post( $attachment_id );
@@ -151,16 +382,20 @@ class MediaAuditor {
 		// -------------------------------------------------------------
 		// 1. Featured Image (_thumbnail_id)
 		// -------------------------------------------------------------
-		$featured_sql = $wpdb->prepare(
-			"SELECT p.ID, p.post_title, p.post_type FROM {$wpdb->postmeta} pm
-			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
-			WHERE pm.meta_key = '_thumbnail_id'
-			AND pm.meta_value = %d
-			AND p.post_status != 'trash'
-			LIMIT 5",
-			$attachment_id
-		);
-		$featured_posts = $wpdb->get_results( $featured_sql );
+		if ( isset( $prefetched_data['featured_posts'][ $attachment_id ] ) ) {
+			$featured_posts = (array) $prefetched_data['featured_posts'][ $attachment_id ];
+		} else {
+			$featured_sql = $wpdb->prepare(
+				"SELECT p.ID, p.post_title, p.post_type FROM {$wpdb->postmeta} pm
+				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
+				WHERE pm.meta_key = '_thumbnail_id'
+				AND pm.meta_value = %d
+				AND p.post_status != 'trash'
+				LIMIT 5",
+				$attachment_id
+			);
+			$featured_posts = (array) $wpdb->get_results( $featured_sql );
+		}
 
 		if ( ! empty( $featured_posts ) ) {
 			foreach ( $featured_posts as $fp ) {
@@ -176,6 +411,10 @@ class MediaAuditor {
 					),
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
+			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 			}
 		}
 
@@ -215,6 +454,10 @@ class MediaAuditor {
 					),
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
+			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 			}
 		}
 
@@ -272,10 +515,16 @@ class MediaAuditor {
 			];
 		}
 
+		if ( $early_exit && ! empty( $references ) ) {
+			return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+		}
+
 		// -------------------------------------------------------------
 		// 4. Taxonomy Meta (Term Thumbnails, e.g. WooCommerce Categories)
 		// -------------------------------------------------------------
-		if ( ! empty( $wpdb->termmeta ) ) {
+		if ( isset( $prefetched_data['term_thumbnails'][ $attachment_id ] ) ) {
+			$term_rows = (array) $prefetched_data['term_thumbnails'][ $attachment_id ];
+		} elseif ( ! empty( $wpdb->termmeta ) ) {
 			$term_sql = $wpdb->prepare(
 				"SELECT t.term_id, t.name, tt.taxonomy FROM {$wpdb->termmeta} tm
 				INNER JOIN {$wpdb->terms} t ON (tm.term_id = t.term_id)
@@ -285,22 +534,39 @@ class MediaAuditor {
 				LIMIT 5",
 				$attachment_id
 			);
-			$term_rows = $wpdb->get_results( $term_sql );
+			$term_rows = (array) $wpdb->get_results( $term_sql );
+		} else {
+			$term_rows = [];
+		}
 
-			if ( ! empty( $term_rows ) ) {
-				foreach ( $term_rows as $tr ) {
-					$tax     = $tr->taxonomy ?? 'category';
-					$term_id = (int) ( $tr->term_id ?? 0 );
-					$references[] = [
-						'label' => sprintf(
-							/* translators: 1: category name, 2: taxonomy name */
-							__( 'Kategorie-Vorschaubild in "%1$s" (%2$s)', 'ha-image-optimizer' ),
-							$tr->name ?? 'Kategorie',
-							$tax
-						),
-						'url'   => self::safe_admin_url( 'term.php?taxonomy=' . $tax . '&tag_ID=' . $term_id ),
-					];
-				}
+		if ( ! empty( $term_rows ) ) {
+			foreach ( $term_rows as $tr ) {
+				$tax     = $tr->taxonomy ?? 'category';
+				$term_id = (int) ( $tr->term_id ?? 0 );
+				$references[] = [
+					'label' => sprintf(
+						/* translators: 1: category name, 2: taxonomy name */
+						__( 'Kategorie-Vorschaubild in "%1$s" (%2$s)', 'ha-image-optimizer' ),
+						$tr->name ?? 'Kategorie',
+						$tax
+					),
+					'url'   => self::safe_admin_url( 'term.php?taxonomy=' . $tax . '&tag_ID=' . $term_id ),
+				];
+			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+			}
+		}
+
+		// -------------------------------------------------------------
+		// 4b. Fast In-Memory Autoloaded Options (Widgets & Site Options, 0 SQL)
+		// -------------------------------------------------------------
+		$autoloaded_refs = self::search_autoloaded_options( $attachment_id, $rel_file, $filename );
+		if ( ! empty( $autoloaded_refs ) ) {
+			$references = array_merge( $references, $autoloaded_refs );
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 			}
 		}
 
@@ -364,66 +630,84 @@ class MediaAuditor {
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
 			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+			}
 		}
 
 		// -------------------------------------------------------------
 		// 6. Page Builder Postmeta (Elementor, Beaver Builder, Bricks, Oxygen)
 		// -------------------------------------------------------------
-		$builder_like_clauses = [
-			'pm.meta_value LIKE %s',
-			'pm.meta_value LIKE %s',
-			'pm.meta_value LIKE %s',
-		];
-		$builder_like_params = [
-			'%"id":' . $attachment_id . '%',
-			'%"id": ' . $attachment_id . '%',
-			'%"id":"' . $attachment_id . '"%',
-		];
-
-		if ( ! empty( $rel_file ) ) {
-			$builder_like_clauses[] = 'pm.meta_value LIKE %s';
-			$builder_like_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+		if ( null === self::$existing_builder_meta_keys ) {
+			$target_keys = [ '_elementor_data', '_elementor_css', '_fl_builder_data', '_bricks_page_content_2', 'ct_builder_json' ];
+			$quoted      = "'" . implode( "','", $target_keys ) . "'";
+			$keys_in_db  = (array) $wpdb->get_col( "SELECT DISTINCT meta_key FROM {$wpdb->postmeta} WHERE meta_key IN ({$quoted})" );
+			self::$existing_builder_meta_keys = array_values( array_intersect( $target_keys, $keys_in_db ) );
 		}
 
-		$where_builder = implode( ' OR ', $builder_like_clauses );
-		$builder_sql   = $wpdb->prepare(
-			"SELECT p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
-			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
-			WHERE pm.meta_key IN ('_elementor_data', '_elementor_css', '_fl_builder_data', '_bricks_page_content_2', 'ct_builder_json')
-			AND ({$where_builder})
-			AND p.post_status != 'trash'
-			LIMIT 5",
-			...$builder_like_params
-		);
-		$builder_posts = $wpdb->get_results( $builder_sql );
+		if ( ! empty( self::$existing_builder_meta_keys ) ) {
+			$builder_like_clauses = [
+				'pm.meta_value LIKE %s',
+				'pm.meta_value LIKE %s',
+				'pm.meta_value LIKE %s',
+			];
+			$builder_like_params = [
+				'%"id":' . $attachment_id . '%',
+				'%"id": ' . $attachment_id . '%',
+				'%"id":"' . $attachment_id . '"%',
+			];
 
-		if ( ! empty( $builder_posts ) ) {
-			foreach ( $builder_posts as $bp ) {
-				$title   = ! empty( $bp->post_title ) ? $bp->post_title : ( 'ID ' . ( $bp->ID ?? 0 ) );
-				$post_id = (int) ( $bp->ID ?? 0 );
+			if ( ! empty( $rel_file ) ) {
+				$builder_like_clauses[] = 'pm.meta_value LIKE %s';
+				$builder_like_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			}
 
-				$builder_name = 'Page Builder';
-				$meta_k       = (string) ( $bp->meta_key ?? '' );
-				if ( str_contains( $meta_k, 'elementor' ) ) {
-					$builder_name = 'Elementor Layout';
-				} elseif ( str_contains( $meta_k, 'fl_builder' ) ) {
-					$builder_name = 'Beaver Builder';
-				} elseif ( str_contains( $meta_k, 'bricks' ) ) {
-					$builder_name = 'Bricks Builder';
-				} elseif ( str_contains( $meta_k, 'ct_builder' ) ) {
-					$builder_name = 'Oxygen Builder';
+			$where_builder = implode( ' OR ', $builder_like_clauses );
+			$in_keys_sql   = "'" . implode( "','", array_map( 'esc_sql', self::$existing_builder_meta_keys ) ) . "'";
+			$builder_sql   = $wpdb->prepare(
+				"SELECT p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
+				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
+				WHERE pm.meta_key IN ({$in_keys_sql})
+				AND ({$where_builder})
+				AND p.post_status != 'trash'
+				LIMIT 5",
+				...$builder_like_params
+			);
+			$builder_posts = $wpdb->get_results( $builder_sql );
+
+			if ( ! empty( $builder_posts ) ) {
+				foreach ( $builder_posts as $bp ) {
+					$title   = ! empty( $bp->post_title ) ? $bp->post_title : ( 'ID ' . ( $bp->ID ?? 0 ) );
+					$post_id = (int) ( $bp->ID ?? 0 );
+
+					$builder_name = 'Page Builder';
+					$meta_k       = (string) ( $bp->meta_key ?? '' );
+					if ( str_contains( $meta_k, 'elementor' ) ) {
+						$builder_name = 'Elementor Layout';
+					} elseif ( str_contains( $meta_k, 'fl_builder' ) ) {
+						$builder_name = 'Beaver Builder';
+					} elseif ( str_contains( $meta_k, 'bricks' ) ) {
+						$builder_name = 'Bricks Builder';
+					} elseif ( str_contains( $meta_k, 'ct_builder' ) ) {
+						$builder_name = 'Oxygen Builder';
+					}
+
+					$references[] = [
+						'label' => sprintf(
+							/* translators: 1: builder name, 2: post title, 3: post ID */
+							__( '%1$s in "%2$s" (#%3$d)', 'ha-image-optimizer' ),
+							$builder_name,
+							$title,
+							$post_id
+						),
+						'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
+					];
 				}
 
-				$references[] = [
-					'label' => sprintf(
-						/* translators: 1: builder name, 2: post title, 3: post ID */
-						__( '%1$s in "%2$s" (#%3$d)', 'ha-image-optimizer' ),
-						$builder_name,
-						$title,
-						$post_id
-					),
-					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
-				];
+				if ( $early_exit ) {
+					return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+				}
 			}
 		}
 
@@ -462,6 +746,10 @@ class MediaAuditor {
 					),
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
+			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 			}
 		}
 
@@ -519,6 +807,10 @@ class MediaAuditor {
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
 			}
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+			}
 		}
 
 		// -------------------------------------------------------------
@@ -534,6 +826,10 @@ class MediaAuditor {
 				),
 				'url'   => self::safe_admin_url( 'theme-editor.php' ),
 			];
+
+			if ( $early_exit ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+			}
 		}
 
 		// -------------------------------------------------------------
@@ -618,6 +914,9 @@ class MediaAuditor {
 							'url'   => self::safe_admin_url( 'admin.php?page=smartslider3&sliderid=' . $slider_id . '&slideid=' . $slide_id ),
 						];
 					}
+					if ( $early_exit ) {
+						return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+					}
 				}
 			}
 
@@ -655,6 +954,10 @@ class MediaAuditor {
 								),
 								'url'   => self::safe_admin_url( 'admin.php?page=smartslider3&sliderid=' . $slider_id ),
 							];
+						}
+
+						if ( $early_exit ) {
+							return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 						}
 					}
 				}
@@ -721,6 +1024,10 @@ class MediaAuditor {
 							'url'   => self::safe_admin_url( 'admin.php?page=revslider&view=slide&id=' . $slide_id ),
 						];
 					}
+
+					if ( $early_exit ) {
+						return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+					}
 				}
 			}
 		}
@@ -764,6 +1071,10 @@ class MediaAuditor {
 							),
 							'url'   => self::safe_admin_url( 'admin.php?page=layerslider&action=edit&id=' . $ls_id ),
 						];
+					}
+
+					if ( $early_exit ) {
+						return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 					}
 				}
 			}
@@ -896,14 +1207,22 @@ class MediaAuditor {
 							'url'   => $url,
 						];
 					}
+
+					if ( $early_exit ) {
+						break;
+					}
 				}
+			}
+
+			if ( $early_exit && ! empty( $references ) ) {
+				return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 			}
 		}
 
 		// -------------------------------------------------------------
-		// 12. WordPress Widgets & Options (wp_options)
+		// 12. WordPress Fallback Options Query (wp_options, non-autoloaded)
 		// -------------------------------------------------------------
-		if ( ! empty( $wpdb->options ) ) {
+		if ( empty( $references ) && ! empty( $wpdb->options ) ) {
 			$opt_clauses = [
 				'option_value LIKE %s',
 				'option_value LIKE %s',
@@ -946,6 +1265,10 @@ class MediaAuditor {
 						'url'   => $url,
 					];
 				}
+
+				if ( $early_exit ) {
+					return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+				}
 			}
 		}
 
@@ -959,8 +1282,8 @@ class MediaAuditor {
 
 		if ( empty( $references ) && $safety_days > 0 ) {
 			$post_date = ! empty( $post->post_date_gmt ) && '0000-00-00 00:00:00' !== $post->post_date_gmt
-				? $post->post_date_gmt
-				: $post->post_date;
+				? $post_date = $post->post_date_gmt
+				: $post_date = $post->post_date;
 
 			$created_time = strtotime( (string) $post_date );
 			if ( $created_time ) {
@@ -980,62 +1303,7 @@ class MediaAuditor {
 			}
 		}
 
-		// -------------------------------------------------------------
-		// 14. Extensibility Hook for Developers & Plugins
-		// -------------------------------------------------------------
-		if ( function_exists( 'apply_filters' ) ) {
-			/**
-			 * Filter detected references for an audited attachment.
-			 *
-			 * @param array<array{label: string, url: string}> $references Detected references.
-			 * @param int                                      $attachment_id Attachment ID.
-			 * @param \WP_Post                                 $post Attachment post object.
-			 */
-			$references = (array) apply_filters( 'ha_io_audit_attachment_references', $references, $attachment_id, $post );
-		}
-
-		// -------------------------------------------------------------
-		// 15. Status Classification & Deduplication
-		// -------------------------------------------------------------
-		$deduped = [];
-		$seen    = [];
-		foreach ( $references as $ref ) {
-			$label = is_array( $ref ) ? ( $ref['label'] ?? '' ) : (string) $ref;
-			if ( ! empty( $label ) && ! isset( $seen[ $label ] ) ) {
-				$seen[ $label ] = true;
-				$deduped[]      = $ref;
-			}
-		}
-		$references = $deduped;
-
-		if ( ! empty( $references ) ) {
-			$status = self::STATUS_USED;
-		} elseif ( $parent_id > 0 ) {
-			$status = self::STATUS_ATTACHED_UNUSED;
-		} else {
-			$status = self::STATUS_UNATTACHED_UNUSED;
-		}
-
-		$reference_labels = array_map( function ( $r ) {
-			return is_array( $r ) ? ( $r['label'] ?? '' ) : (string) $r;
-		}, $references );
-
-		return [
-			'id'             => $attachment_id,
-			'filename'       => $filename,
-			'mime'           => $post->post_mime_type,
-			'thumb_url'      => (string) $thumb_url,
-			'date'           => get_the_date( 'Y-m-d H:i', $attachment_id ),
-			'parent_id'      => $parent_id,
-			'parent_title'   => $parent_title,
-			'parent_url'     => $parent_id > 0 ? self::safe_admin_url( 'post.php?post=' . $parent_id . '&action=edit' ) : '',
-			'disk_bytes'     => $disk_bytes,
-			'disk_human'     => SizeGuard::format_size( $disk_bytes, 1 ),
-			'status'         => $status,
-			'references'     => $references,
-			'reference_desc' => implode( ', ', $reference_labels ),
-			'scanned_at'     => time(),
-		];
+		return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
 	}
 
 	/**
@@ -1504,6 +1772,7 @@ class MediaAuditor {
 		self::$theme_files_cache          = null;
 		self::$custom_tables_cache        = null;
 		self::$generic_custom_tables_cache = null;
+		self::$existing_builder_meta_keys = null;
 		if ( function_exists( 'delete_transient' ) ) {
 			delete_transient( 'ha_io_audit_tables_schema' );
 		}

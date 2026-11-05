@@ -385,9 +385,13 @@ class OptimizerCliCommand {
 		$progress = \WP_CLI\Utils\make_progress_bar( 'Analysiere Verwendung', $total );
 
 		$results = [];
-		foreach ( $queue as $id ) {
-			$results[] = MediaAuditor::audit_attachment( $id );
-			$progress->tick();
+		$chunks  = array_chunk( $queue, 15 );
+		foreach ( $chunks as $chunk ) {
+			$prefetched = MediaAuditor::prefetch_batch_data( $chunk );
+			foreach ( $chunk as $id ) {
+				$results[] = MediaAuditor::audit_attachment( $id, $prefetched, true );
+				$progress->tick();
+			}
 		}
 		$progress->finish();
 
@@ -483,10 +487,14 @@ class OptimizerCliCommand {
 		} else {
 			$queue = MediaAuditor::get_audit_queue();
 			WP_CLI::line( 'Ermittle verwaiste Medien...' );
-			foreach ( $queue as $id ) {
-				$audit = MediaAuditor::audit_attachment( $id );
-				if ( MediaAuditor::STATUS_UNATTACHED_UNUSED === $audit['status'] ) {
-					$orphans[] = $audit;
+			$chunks = array_chunk( $queue, 15 );
+			foreach ( $chunks as $chunk ) {
+				$prefetched = MediaAuditor::prefetch_batch_data( $chunk );
+				foreach ( $chunk as $id ) {
+					$audit = MediaAuditor::audit_attachment( $id, $prefetched, true );
+					if ( MediaAuditor::STATUS_UNATTACHED_UNUSED === $audit['status'] ) {
+						$orphans[] = $audit;
+					}
 				}
 			}
 		}

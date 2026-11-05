@@ -322,10 +322,13 @@ class AjaxHandler {
 			wp_send_json_error( [ 'message' => esc_html__( 'Keine IDs übergeben.', 'ha-image-optimizer' ) ], 400 );
 		}
 
+		$prefetched = MediaAuditor::prefetch_batch_data( $ids );
+		$early_exit = (bool) Settings::get( 'auditor_fast_mode', true );
+
 		$audited = [];
 		foreach ( $ids as $id ) {
 			if ( $id > 0 ) {
-				$audited[] = MediaAuditor::audit_attachment( $id );
+				$audited[] = MediaAuditor::audit_attachment( $id, $prefetched, $early_exit );
 			}
 		}
 

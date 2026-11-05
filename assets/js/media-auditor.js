@@ -11,7 +11,7 @@
 		let auditProcessed = 0;
 		let alreadyScanned = 0;
 		let isRunning = false;
-		const batchSize = 15; // 15 attachments per batch query
+		const batchSize = 10; // 10 attachments per batch query to prevent long MySQL locks
 
 		function updateScanButtonLabel() {
 			if (isRunning) return;
@@ -151,12 +151,17 @@
 						updateProgress();
 					}
 
-					processNextAuditBatch();
+					// Breather between batches to yield MySQL thread pool and keep server responsive
+					setTimeout(function () {
+						processNextAuditBatch();
+					}, 150);
 				},
 				error: function () {
 					auditProcessed += chunk.length;
 					updateProgress();
-					processNextAuditBatch();
+					setTimeout(function () {
+						processNextAuditBatch();
+					}, 150);
 				}
 			});
 		}
