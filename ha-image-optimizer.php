@@ -3,7 +3,7 @@
  * Plugin Name:       HA Image Optimizer
  * Plugin URI:        https://github.com/mystryx1337/ha-image-optimizer
  * Description:       Leistungsstarke, rein lokale Bildoptimierung für WordPress ohne externe APIs. Generiert WebP und AVIF, verwaltet Backups und bietet Vorher-Nachher-Statistiken.
- * Version:           1.3.3
+ * Version:           1.3.4
  * Requires at least: 6.0
  * Requires PHP:      8.1
  * Author:            Alexander Hacker
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // -----------------------------------------------------------------------------
 // 1. Plugin-Konstanten
 // -----------------------------------------------------------------------------
-define( 'HA_IO_VERSION', '1.3.3' );
+define( 'HA_IO_VERSION', '1.3.4' );
 define( 'HA_IO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HA_IO_URL', plugin_dir_url( __FILE__ ) );
 define( 'HA_IO_BASENAME', plugin_basename( __FILE__ ) );
