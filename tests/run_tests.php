@@ -393,6 +393,13 @@ namespace {
 		}
 	}
 
+	$GLOBALS['wp_test_original_image_path'] = [];
+	if ( ! function_exists( 'wp_get_original_image_path' ) ) {
+		function wp_get_original_image_path( $attachment_id ) {
+			return $GLOBALS['wp_test_original_image_path'][ $attachment_id ] ?? false;
+		}
+	}
+
 	$GLOBALS['wp_test_posts'] = [];
 	if ( ! function_exists( 'get_post' ) ) {
 		function get_post( $post = null ) {
@@ -580,6 +587,14 @@ namespace {
 							'title'        => 'Hero Slide',
 							'slider_title' => 'Startseiten Slider',
 						],
+					];
+				}
+				return [];
+			}
+			if ( str_contains( $query, 'p.post_content LIKE' ) ) {
+				if ( str_contains( $query, 'landscape-photo' ) || str_contains( $query, '300x200' ) || str_contains( $query, 'scaled' ) ) {
+					return [
+						(object) [ 'ID' => 70, 'post_title' => 'Beitrag mit skaliertem Bild', 'post_type' => 'post' ],
 					];
 				}
 				return [];
@@ -1185,6 +1200,92 @@ namespace HA_Image_Optimizer_Tests {
 			$mergedCache = MediaAuditor::get_cached_results();
 			$this->assert( 2 === $mergedCache['counts']['total'], 'Merged cache contains both batch 1 and batch 2 items' );
 			$this->assert( isset( $mergedCache['items'][1], $mergedCache['items'][3] ), 'Both items 1 and 3 present in merged cache' );
+
+			// 6. Test WordPress 5.3+ -scaled image and intermediate sub-sizes variants resolution
+			$uploadDir = wp_upload_dir();
+			$basedir   = $uploadDir['basedir'];
+			$scaledFile = $basedir . '/2024/05/landscape-photo-scaled.jpg';
+			$GLOBALS['wp_test_attached_file'][30] = $scaledFile;
+			$GLOBALS['wp_test_original_image_path'][30] = $basedir . '/2024/05/landscape-photo.jpg';
+			$GLOBALS['wp_test_metadata'][30] = [
+				'width'          => 2560,
+				'height'         => 1440,
+				'file'           => '2024/05/landscape-photo-scaled.jpg',
+				'original_image' => 'landscape-photo.jpg',
+				'sizes'          => [
+					'thumbnail' => [
+						'file'      => 'landscape-photo-scaled-150x150.jpg',
+						'width'     => 150,
+						'height'    => 150,
+						'mime-type' => 'image/jpeg',
+					],
+					'medium'    => [
+						'file'      => 'landscape-photo-300x200.jpg',
+						'width'     => 300,
+						'height'    => 200,
+						'mime-type' => 'image/jpeg',
+					],
+					'large'     => [
+						'file'      => 'landscape-photo-1024x768.jpg',
+						'width'     => 1024,
+						'height'    => 768,
+						'mime-type' => 'image/jpeg',
+					],
+				],
+			];
+
+			$variants = MediaAuditor::get_attachment_file_variants( 30, $scaledFile );
+			$this->assert( in_array( 'landscape-photo-scaled.jpg', $variants['filenames'], true ), 'Variants include scaled filename' );
+			$this->assert( in_array( 'landscape-photo.jpg', $variants['filenames'], true ), 'Variants include original unscaled filename' );
+			$this->assert( in_array( 'landscape-photo-300x200.jpg', $variants['filenames'], true ), 'Variants include medium thumbnail sub-size' );
+			$this->assert( in_array( 'landscape-photo-1024x768.jpg', $variants['filenames'], true ), 'Variants include large thumbnail sub-size' );
+			$this->assert( in_array( '2024/05/landscape-photo-300x200.jpg', $variants['rel_files'], true ), 'Variants include relative path for sub-size' );
+
+			// Test audit_attachment detects usage when sub-size (300x200) or original is embedded in post_content
+			$GLOBALS['wp_test_posts'][30] = (object) [ 
+				'ID'             => 30,
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image/jpeg',
+				'post_parent'    => 0,
+				'post_status'    => 'inherit',
+				'post_title'     => 'Landscape Photo Scaled',
+				'post_date'      => '2020-01-01 12:00:00',
+				'post_date_gmt'  => '2020-01-01 12:00:00',
+			];
+
+			$auditScaled = MediaAuditor::audit_attachment( 30 );
+			$this->assert( MediaAuditor::STATUS_USED === $auditScaled['status'], 'Scaled attachment detected as used when sub-size is embedded in content' );
+			$this->assert( ! empty( $auditScaled['references'] ), 'Contains content reference for scaled attachment' );
+			$this->assert( str_contains( $auditScaled['references'][0]['label'], 'Eingebunden im Inhalt' ), 'Reference identifies post_content embedding' );
+
+			// Test disk bytes calculation includes original_image
+			$tempDir = sys_get_temp_dir() . '/ha_io_scaled_test_' . time();
+			wp_mkdir_p( $tempDir );
+			$tScaled = $tempDir . '/test-scaled.jpg';
+			$tOrig   = $tempDir . '/test.jpg';
+			$tThumb  = $tempDir . '/test-150x150.jpg';
+			file_put_contents( $tScaled, str_repeat( 'A', 5000 ) );
+			file_put_contents( $tOrig,   str_repeat( 'B', 8000 ) );
+			file_put_contents( $tThumb,  str_repeat( 'C', 2000 ) );
+
+			$GLOBALS['wp_test_metadata'][31] = [
+				'file'           => wp_basename( $tScaled ),
+				'original_image' => wp_basename( $tOrig ),
+				'sizes'          => [
+					'thumbnail' => [
+						'file' => wp_basename( $tThumb ),
+					],
+				],
+			];
+
+			$diskBytes = MediaAuditor::calculate_disk_bytes( 31, $tScaled );
+			$this->assert( 15000 === $diskBytes, 'calculate_disk_bytes includes scaled master, original unscaled, and thumbnail (5000+8000+2000=15000)' );
+
+			// Clean up temp files
+			@unlink( $tScaled );
+			@unlink( $tOrig );
+			@unlink( $tThumb );
+			@rmdir( $tempDir );
 
 			MediaAuditor::clear_results();
 		}

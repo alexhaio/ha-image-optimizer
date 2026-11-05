@@ -181,12 +181,12 @@ class MediaAuditor {
 	/**
 	 * Search in-memory autoloaded options for image references (0 SQL queries).
 	 *
-	 * @param int    $attachment_id Attachment ID.
-	 * @param string $rel_file Relative file path.
-	 * @param string $filename Basename of file.
+	 * @param int                  $attachment_id Attachment ID.
+	 * @param array<string>|string $rel_file Relative file path(s).
+	 * @param array<string>|string $filename Basename(s) of file.
 	 * @return array<array{label: string, url: string}>
 	 */
-	public static function search_autoloaded_options( int $attachment_id, string $rel_file, string $filename ): array {
+	public static function search_autoloaded_options( int $attachment_id, array|string $rel_file = '', array|string $filename = '' ): array {
 		if ( ! function_exists( 'wp_load_alloptions' ) ) {
 			return [];
 		}
@@ -206,9 +206,21 @@ class MediaAuditor {
 			'"image_id":' . $id_str,
 		];
 
-		if ( ! empty( $rel_file ) ) {
-			$patterns[] = $rel_file;
+		$rel_files = is_array( $rel_file ) ? $rel_file : ( ! empty( $rel_file ) ? [ $rel_file ] : [] );
+		$safe_fns  = is_array( $filename ) ? $filename : ( ! empty( $filename ) && strlen( $filename ) >= 6 ? [ $filename ] : [] );
+
+		foreach ( $rel_files as $rf ) {
+			if ( ! empty( $rf ) ) {
+				$patterns[] = $rf;
+			}
 		}
+		foreach ( $safe_fns as $fn ) {
+			if ( ! empty( $fn ) && strlen( $fn ) >= 6 ) {
+				$patterns[] = $fn;
+			}
+		}
+
+		$patterns = array_values( array_unique( $patterns ) );
 
 		foreach ( $alloptions as $opt_name => $opt_val ) {
 			$opt_name = (string) $opt_name;
@@ -247,6 +259,133 @@ class MediaAuditor {
 		}
 
 		return $found_refs;
+	}
+
+	/**
+	 * Retrieve all search variants for an attachment: original unscaled, scaled, and intermediate sub-sizes.
+	 *
+	 * WordPress 5.3+ generates scaled images (-scaled.jpg) for large uploads and stores
+	 * the original unscaled filename in metadata ('original_image'). Posts and builders
+	 * may embed the scaled image, original image, or any intermediate thumbnail size.
+	 *
+	 * @param int         $attachment_id Attachment ID.
+	 * @param string|null $file Optional absolute file path.
+	 * @return array{filenames: array<string>, safe_filenames: array<string>, rel_files: array<string>}
+	 */
+	public static function get_attachment_file_variants( int $attachment_id, ?string $file = null ): array {
+		if ( empty( $file ) ) {
+			$file = (string) get_attached_file( $attachment_id );
+		}
+
+		$upload_dir = function_exists( 'wp_upload_dir' ) ? wp_upload_dir() : [];
+		$basedir    = ! empty( $upload_dir['basedir'] ) ? wp_normalize_path( $upload_dir['basedir'] ) : '';
+
+		$filenames = [];
+		$rel_files = [];
+
+		$filename = $file ? wp_basename( $file ) : '';
+		$rel_file = '';
+		$rel_dir  = '';
+
+		if ( $file && $basedir ) {
+			$norm_file = wp_normalize_path( $file );
+			if ( str_starts_with( $norm_file, $basedir ) ) {
+				$rel_file = ltrim( substr( $norm_file, strlen( $basedir ) ), '/' );
+			}
+		}
+
+		if ( ! empty( $filename ) ) {
+			$filenames[] = $filename;
+		}
+		if ( ! empty( $rel_file ) ) {
+			$rel_files[] = $rel_file;
+			$d           = dirname( $rel_file );
+			$rel_dir     = ( '.' === $d || '/' === $d ) ? '' : $d . '/';
+		}
+
+		// 1. WordPress 5.3+ wp_get_original_image_path()
+		if ( function_exists( 'wp_get_original_image_path' ) ) {
+			$orig_path = (string) wp_get_original_image_path( $attachment_id );
+			if ( ! empty( $orig_path ) && $orig_path !== $file ) {
+				$orig_name = wp_basename( $orig_path );
+				if ( ! empty( $orig_name ) ) {
+					$filenames[] = $orig_name;
+					if ( ! empty( $rel_dir ) ) {
+						$rel_files[] = $rel_dir . $orig_name;
+					}
+				}
+			}
+		}
+
+		// 2. Derive -scaled / unscaled regex variants
+		if ( ! empty( $filename ) ) {
+			if ( preg_match( '/-scaled(?=\.[a-zA-Z0-9]+$)/i', $filename ) ) {
+				$unscaled = preg_replace( '/-scaled(?=\.[a-zA-Z0-9]+$)/i', '', $filename );
+				if ( ! empty( $unscaled ) ) {
+					$filenames[] = $unscaled;
+					if ( ! empty( $rel_dir ) ) {
+						$rel_files[] = $rel_dir . $unscaled;
+					}
+				}
+			} else {
+				$scaled = preg_replace( '/(?=\.[a-zA-Z0-9]+$)/i', '-scaled', $filename );
+				if ( ! empty( $scaled ) ) {
+					$filenames[] = $scaled;
+					if ( ! empty( $rel_dir ) ) {
+						$rel_files[] = $rel_dir . $scaled;
+					}
+				}
+			}
+		}
+
+		// 3. Metadata inspection (original_image, file, and all registered sub-sizes)
+		if ( function_exists( 'wp_get_attachment_metadata' ) ) {
+			$meta = wp_get_attachment_metadata( $attachment_id );
+			if ( is_array( $meta ) ) {
+				// Original unscaled image from metadata
+				if ( ! empty( $meta['original_image'] ) && is_string( $meta['original_image'] ) ) {
+					$orig_meta_name = wp_basename( $meta['original_image'] );
+					$filenames[]    = $orig_meta_name;
+					if ( ! empty( $rel_dir ) ) {
+						$rel_files[] = $rel_dir . $orig_meta_name;
+					}
+				}
+
+				// Metadata file entry (if different from attached_file)
+				if ( ! empty( $meta['file'] ) && is_string( $meta['file'] ) ) {
+					$meta_norm   = wp_normalize_path( $meta['file'] );
+					$rel_files[] = $meta_norm;
+					$filenames[] = wp_basename( $meta_norm );
+				}
+
+				// All registered thumbnail/sub-sizes (thumbnail, medium, large, etc.)
+				if ( ! empty( $meta['sizes'] ) && is_array( $meta['sizes'] ) ) {
+					foreach ( $meta['sizes'] as $size_data ) {
+						if ( ! empty( $size_data['file'] ) && is_string( $size_data['file'] ) ) {
+							$sub_name    = wp_basename( $size_data['file'] );
+							$filenames[] = $sub_name;
+							if ( ! empty( $rel_dir ) ) {
+								$rel_files[] = $rel_dir . $sub_name;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$clean_filenames = array_values( array_filter( array_unique( $filenames ) ) );
+		$clean_rel_files = array_values( array_filter( array_unique( $rel_files ) ) );
+
+		// Safe filenames for broad content/table search (min 6 characters to prevent accidental false matches)
+		$safe_filenames = array_values( array_filter( $clean_filenames, function ( $name ) {
+			return strlen( $name ) >= 6;
+		} ) );
+
+		return [
+			'filenames'      => $clean_filenames,
+			'safe_filenames' => $safe_filenames,
+			'rel_files'      => $clean_rel_files,
+		];
 	}
 
 	/**
@@ -379,6 +518,9 @@ class MediaAuditor {
 			$rel_file = ltrim( str_replace( wp_normalize_path( $upload_dir['basedir'] ), '', wp_normalize_path( $file ) ), '/' );
 		}
 
+		// Retrieve all file variations (original unscaled, -scaled variant, and all registered sub-sizes)
+		$search_variants = self::get_attachment_file_variants( $attachment_id, $file );
+
 		// -------------------------------------------------------------
 		// 1. Featured Image (_thumbnail_id)
 		// -------------------------------------------------------------
@@ -496,8 +638,21 @@ class MediaAuditor {
 			$is_header_match = true;
 		} elseif ( is_array( $header_img_data ) && isset( $header_img_data['attachment_id'] ) && (int) $header_img_data['attachment_id'] === $attachment_id ) {
 			$is_header_match = true;
-		} elseif ( ! empty( $rel_file ) && str_contains( $header_img_url, $rel_file ) ) {
-			$is_header_match = true;
+		} elseif ( ! empty( $header_img_url ) ) {
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) && str_contains( $header_img_url, $rf ) ) {
+					$is_header_match = true;
+					break;
+				}
+			}
+			if ( ! $is_header_match ) {
+				foreach ( $search_variants['safe_filenames'] as $sfn ) {
+					if ( ! empty( $sfn ) && str_contains( $header_img_url, $sfn ) ) {
+						$is_header_match = true;
+						break;
+					}
+				}
+			}
 		}
 		if ( $is_header_match ) {
 			$references[] = [
@@ -508,7 +663,24 @@ class MediaAuditor {
 
 		// Background Image
 		$bg_image_url = (string) get_theme_mod( 'background_image', '' );
-		if ( ! empty( $rel_file ) && str_contains( $bg_image_url, $rel_file ) ) {
+		$is_bg_match  = false;
+		if ( ! empty( $bg_image_url ) ) {
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) && str_contains( $bg_image_url, $rf ) ) {
+					$is_bg_match = true;
+					break;
+				}
+			}
+			if ( ! $is_bg_match ) {
+				foreach ( $search_variants['safe_filenames'] as $sfn ) {
+					if ( ! empty( $sfn ) && str_contains( $bg_image_url, $sfn ) ) {
+						$is_bg_match = true;
+						break;
+					}
+				}
+			}
+		}
+		if ( $is_bg_match ) {
 			$references[] = [
 				'label' => __( 'Theme Hintergrundbild (Customizer)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'customize.php?autofocus[control]=background_image' ),
@@ -562,7 +734,7 @@ class MediaAuditor {
 		// -------------------------------------------------------------
 		// 4b. Fast In-Memory Autoloaded Options (Widgets & Site Options, 0 SQL)
 		// -------------------------------------------------------------
-		$autoloaded_refs = self::search_autoloaded_options( $attachment_id, $rel_file, $filename );
+		$autoloaded_refs = self::search_autoloaded_options( $attachment_id, $search_variants['rel_files'], $search_variants['safe_filenames'] );
 		if ( ! empty( $autoloaded_refs ) ) {
 			$references = array_merge( $references, $autoloaded_refs );
 			if ( $early_exit ) {
@@ -581,12 +753,16 @@ class MediaAuditor {
 			'images="' . $attachment_id . '"',
 		];
 
-		if ( ! empty( $rel_file ) ) {
-			$content_patterns[] = $rel_file;
+		foreach ( $search_variants['rel_files'] as $rf ) {
+			if ( ! empty( $rf ) ) {
+				$content_patterns[] = $rf;
+			}
 		}
 
-		if ( strlen( $filename ) >= 6 ) {
-			$content_patterns[] = $filename;
+		foreach ( $search_variants['safe_filenames'] as $sfn ) {
+			if ( ! empty( $sfn ) ) {
+				$content_patterns[] = $sfn;
+			}
 		}
 
 		// Build safe LIKE clauses for content searching
@@ -658,9 +834,18 @@ class MediaAuditor {
 				'%"id":"' . $attachment_id . '"%',
 			];
 
-			if ( ! empty( $rel_file ) ) {
-				$builder_like_clauses[] = 'pm.meta_value LIKE %s';
-				$builder_like_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) ) {
+					$builder_like_clauses[] = 'pm.meta_value LIKE %s';
+					$builder_like_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+				}
+			}
+
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $sfn ) ) {
+					$builder_like_clauses[] = 'pm.meta_value LIKE %s';
+					$builder_like_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+				}
 			}
 
 			$where_builder = implode( ' OR ', $builder_like_clauses );
@@ -767,9 +952,18 @@ class MediaAuditor {
 			'%"imageId":' . $attachment_id . '%',
 		];
 
-		if ( ! empty( $rel_file ) ) {
-			$pm_clauses[] = 'pm.meta_value LIKE %s';
-			$pm_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+		foreach ( $search_variants['rel_files'] as $rf ) {
+			if ( ! empty( $rf ) ) {
+				$pm_clauses[] = 'pm.meta_value LIKE %s';
+				$pm_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+			}
+		}
+
+		foreach ( $search_variants['safe_filenames'] as $sfn ) {
+			if ( ! empty( $sfn ) ) {
+				$pm_clauses[] = 'pm.meta_value LIKE %s';
+				$pm_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+			}
 		}
 
 		$where_pm = implode( ' OR ', $pm_clauses );
@@ -816,7 +1010,7 @@ class MediaAuditor {
 		// -------------------------------------------------------------
 		// 9. Active Theme Files Scan (style.css, templates, theme.json)
 		// -------------------------------------------------------------
-		$theme_file = self::search_active_theme_files( $filename, $rel_file );
+		$theme_file = self::search_active_theme_files( $search_variants['safe_filenames'], $search_variants['rel_files'] );
 		if ( $theme_file ) {
 			$references[] = [
 				'label' => sprintf(
@@ -843,20 +1037,24 @@ class MediaAuditor {
 			$ss_clauses = [];
 			$ss_params  = [];
 
-			if ( ! empty( $rel_file ) ) {
-				$ss_clauses[] = 's.params LIKE %s';
-				$ss_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) ) {
+					$ss_clauses[] = 's.params LIKE %s';
+					$ss_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
 
-				$ss_clauses[] = 's.thumbnail LIKE %s';
-				$ss_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+					$ss_clauses[] = 's.thumbnail LIKE %s';
+					$ss_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+				}
 			}
 
-			if ( strlen( $filename ) >= 5 ) {
-				$ss_clauses[] = 's.params LIKE %s';
-				$ss_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $sfn ) ) {
+					$ss_clauses[] = 's.params LIKE %s';
+					$ss_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
 
-				$ss_clauses[] = 's.thumbnail LIKE %s';
-				$ss_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
+					$ss_clauses[] = 's.thumbnail LIKE %s';
+					$ss_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+				}
 			}
 
 			$id_patterns = [
@@ -921,16 +1119,20 @@ class MediaAuditor {
 			}
 
 			// Slider-level global settings / background
-			if ( $table_smart_sliders && ( ! empty( $rel_file ) || strlen( $filename ) >= 5 ) ) {
+			if ( $table_smart_sliders && ( ! empty( $search_variants['rel_files'] ) || ! empty( $search_variants['safe_filenames'] ) ) ) {
 				$ssl_clauses = [];
 				$ssl_params  = [];
-				if ( ! empty( $rel_file ) ) {
-					$ssl_clauses[] = 'params LIKE %s';
-					$ssl_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+				foreach ( $search_variants['rel_files'] as $rf ) {
+					if ( ! empty( $rf ) ) {
+						$ssl_clauses[] = 'params LIKE %s';
+						$ssl_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+					}
 				}
-				if ( strlen( $filename ) >= 5 ) {
-					$ssl_clauses[] = 'params LIKE %s';
-					$ssl_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
+				foreach ( $search_variants['safe_filenames'] as $sfn ) {
+					if ( ! empty( $sfn ) ) {
+						$ssl_clauses[] = 'params LIKE %s';
+						$ssl_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+					}
 				}
 				if ( ! empty( $ssl_clauses ) ) {
 					$where_ssl = implode( ' OR ', $ssl_clauses );
@@ -971,18 +1173,22 @@ class MediaAuditor {
 			$rev_clauses = [];
 			$rev_params  = [];
 
-			if ( ! empty( $rel_file ) ) {
-				$rev_clauses[] = 's.params LIKE %s';
-				$rev_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
-				$rev_clauses[] = 's.layers LIKE %s';
-				$rev_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) ) {
+					$rev_clauses[] = 's.params LIKE %s';
+					$rev_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+					$rev_clauses[] = 's.layers LIKE %s';
+					$rev_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+				}
 			}
 
-			if ( strlen( $filename ) >= 5 ) {
-				$rev_clauses[] = 's.params LIKE %s';
-				$rev_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
-				$rev_clauses[] = 's.layers LIKE %s';
-				$rev_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $sfn ) ) {
+					$rev_clauses[] = 's.params LIKE %s';
+					$rev_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+					$rev_clauses[] = 's.layers LIKE %s';
+					$rev_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+				}
 			}
 
 			$rev_clauses[] = 's.params LIKE %s';
@@ -1038,13 +1244,17 @@ class MediaAuditor {
 			$ls_clauses = [];
 			$ls_params  = [];
 
-			if ( ! empty( $rel_file ) ) {
-				$ls_clauses[] = 'data LIKE %s';
-				$ls_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) ) {
+					$ls_clauses[] = 'data LIKE %s';
+					$ls_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+				}
 			}
-			if ( strlen( $filename ) >= 5 ) {
-				$ls_clauses[] = 'data LIKE %s';
-				$ls_params[]  = '%' . $wpdb->esc_like( $filename ) . '%';
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $sfn ) ) {
+					$ls_clauses[] = 'data LIKE %s';
+					$ls_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+				}
 			}
 			$ls_clauses[] = 'data LIKE %s';
 			$ls_params[]  = '%"imageId":' . $attachment_id . '%';
@@ -1124,9 +1334,18 @@ class MediaAuditor {
 					$tbl_clauses[] = "`{$col}` LIKE %s";
 					$tbl_params[]  = '%"image_id":' . $attachment_id . '%';
 
-					if ( ! empty( $rel_file ) ) {
-						$tbl_clauses[] = "`{$col}` LIKE %s";
-						$tbl_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+					foreach ( $search_variants['rel_files'] as $rf ) {
+						if ( ! empty( $rf ) ) {
+							$tbl_clauses[] = "`{$col}` LIKE %s";
+							$tbl_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+						}
+					}
+
+					foreach ( $search_variants['safe_filenames'] as $sfn ) {
+						if ( ! empty( $sfn ) ) {
+							$tbl_clauses[] = "`{$col}` LIKE %s";
+							$tbl_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+						}
 					}
 				}
 
@@ -1234,9 +1453,18 @@ class MediaAuditor {
 				'%"imageId":' . $attachment_id . '%',
 			];
 
-			if ( ! empty( $rel_file ) ) {
-				$opt_clauses[] = 'option_value LIKE %s';
-				$opt_params[]  = '%' . $wpdb->esc_like( $rel_file ) . '%';
+			foreach ( $search_variants['rel_files'] as $rf ) {
+				if ( ! empty( $rf ) ) {
+					$opt_clauses[] = 'option_value LIKE %s';
+					$opt_params[]  = '%' . $wpdb->esc_like( $rf ) . '%';
+				}
+			}
+
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $sfn ) ) {
+					$opt_clauses[] = 'option_value LIKE %s';
+					$opt_params[]  = '%' . $wpdb->esc_like( $sfn ) . '%';
+				}
 			}
 
 			$where_opts = implode( ' OR ', $opt_clauses );
@@ -1309,11 +1537,11 @@ class MediaAuditor {
 	/**
 	 * Search active theme files (style.css, templates, theme.json) for image references.
 	 *
-	 * @param string $filename Image basename.
-	 * @param string $rel_file Relative upload path.
+	 * @param array<string>|string $filename Basename(s) of file.
+	 * @param array<string>|string $rel_file Relative upload path(s).
 	 * @return string|null Found file name or null.
 	 */
-	public static function search_active_theme_files( string $filename, string $rel_file ): ?string {
+	public static function search_active_theme_files( array|string $filename, array|string $rel_file = '' ): ?string {
 		if ( null === self::$theme_files_cache ) {
 			self::$theme_files_cache = [];
 			$dirs = [];
@@ -1343,12 +1571,19 @@ class MediaAuditor {
 			}
 		}
 
+		$rel_files = is_array( $rel_file ) ? $rel_file : ( ! empty( $rel_file ) ? [ $rel_file ] : [] );
+		$safe_fns  = is_array( $filename ) ? $filename : ( ! empty( $filename ) && strlen( $filename ) >= 6 ? [ $filename ] : [] );
+
 		foreach ( self::$theme_files_cache as $file_name => $content ) {
-			if ( ! empty( $rel_file ) && str_contains( $content, $rel_file ) ) {
-				return $file_name;
+			foreach ( $rel_files as $rf ) {
+				if ( ! empty( $rf ) && str_contains( $content, $rf ) ) {
+					return $file_name;
+				}
 			}
-			if ( strlen( $filename ) >= 6 && str_contains( $content, $filename ) ) {
-				return $file_name;
+			foreach ( $safe_fns as $fn ) {
+				if ( ! empty( $fn ) && strlen( $fn ) >= 6 && str_contains( $content, $fn ) ) {
+					return $file_name;
+				}
 			}
 		}
 
@@ -1577,8 +1812,22 @@ class MediaAuditor {
 			$bytes += (int) filesize( $file . '.avif' );
 		}
 
-		// Check thumbnails
+		// Check original unscaled image (WordPress 5.3+ big image threshold)
 		$meta = wp_get_attachment_metadata( $attachment_id );
+		if ( ! empty( $meta['original_image'] ) && is_string( $meta['original_image'] ) ) {
+			$orig_path = trailingslashit( $base_dir ) . wp_basename( $meta['original_image'] );
+			if ( $orig_path !== $file && file_exists( $orig_path ) ) {
+				$bytes += (int) filesize( $orig_path );
+				if ( file_exists( $orig_path . '.webp' ) ) {
+					$bytes += (int) filesize( $orig_path . '.webp' );
+				}
+				if ( file_exists( $orig_path . '.avif' ) ) {
+					$bytes += (int) filesize( $orig_path . '.avif' );
+				}
+			}
+		}
+
+		// Check thumbnails
 		if ( ! empty( $meta['sizes'] ) && is_array( $meta['sizes'] ) ) {
 			foreach ( $meta['sizes'] as $size_info ) {
 				if ( empty( $size_info['file'] ) ) {
