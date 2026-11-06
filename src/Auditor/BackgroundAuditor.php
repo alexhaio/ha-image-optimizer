@@ -427,7 +427,7 @@ class BackgroundAuditor {
 		];
 
 		$response = wp_remote_post( $ajax_url, $args );
-		return ! is_wp_error( $response );
+		return ( function_exists( 'is_wp_error' ) && is_wp_error( $response ) ) ? false : true;
 	}
 
 	/**

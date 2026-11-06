@@ -297,6 +297,12 @@ namespace {
 			return 'test_nonce_' . $action;
 		}
 	}
+	if ( ! function_exists( 'is_wp_error' ) ) {
+		function is_wp_error( $thing = null ): bool {
+			return false;
+		}
+	}
+
 	if ( ! function_exists( 'wp_verify_nonce' ) ) {
 		function wp_verify_nonce( $nonce, $action = -1 ): bool {
 			return true;
