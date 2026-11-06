@@ -48,6 +48,13 @@ class Settings {
 			'auditor_generic_db_scan'      => true,
 			'auditor_safety_buffer_days'   => 0,
 			'auditor_custom_tables'        => '',
+			'auditor_background_enabled'   => false,
+			'auditor_night_mode_enabled'   => true,
+			'auditor_night_start'          => '02:00',
+			'auditor_night_end'            => '06:00',
+			'auditor_pacing_mode'          => 'standard',
+			'auditor_max_server_load'      => 2.5,
+			'auditor_reverse_index_enabled'=> true,
 		];
 	}
 
@@ -174,6 +181,33 @@ class Settings {
 			}
 		}
 		$clean['auditor_custom_tables'] = implode( "\n", array_unique( $clean_tbls ) );
+
+		// Auditor Background & Throttling Settings
+		$clean['auditor_background_enabled'] = ! empty( $input['auditor_background_enabled'] );
+
+		// When background tasks are enabled, night mode is active by default unless explicitly disabled
+		if ( isset( $input['auditor_night_mode_enabled'] ) ) {
+			$clean['auditor_night_mode_enabled'] = ! empty( $input['auditor_night_mode_enabled'] );
+		} elseif ( $clean['auditor_background_enabled'] ) {
+			$clean['auditor_night_mode_enabled'] = true;
+		} else {
+			$clean['auditor_night_mode_enabled'] = (bool) ( $defaults['auditor_night_mode_enabled'] ?? true );
+		}
+
+		$time_regex = '/^([01]\d|2[0-3]):[0-5]\d$/';
+		$night_start = isset( $input['auditor_night_start'] ) ? trim( (string) $input['auditor_night_start'] ) : '02:00';
+		$clean['auditor_night_start'] = preg_match( $time_regex, $night_start ) ? $night_start : '02:00';
+
+		$night_end = isset( $input['auditor_night_end'] ) ? trim( (string) $input['auditor_night_end'] ) : '06:00';
+		$clean['auditor_night_end'] = preg_match( $time_regex, $night_end ) ? $night_end : '06:00';
+
+		$pacing = isset( $input['auditor_pacing_mode'] ) ? sanitize_key( (string) $input['auditor_pacing_mode'] ) : 'standard';
+		$clean['auditor_pacing_mode'] = in_array( $pacing, [ 'eco', 'standard', 'turbo' ], true ) ? $pacing : 'standard';
+
+		$max_load = isset( $input['auditor_max_server_load'] ) ? (float) $input['auditor_max_server_load'] : 2.5;
+		$clean['auditor_max_server_load'] = ( $max_load >= 0.5 && $max_load <= 50.0 ) ? round( $max_load, 1 ) : 2.5;
+
+		$clean['auditor_reverse_index_enabled'] = ! empty( $input['auditor_reverse_index_enabled'] );
 
 		return $clean;
 	}

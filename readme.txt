@@ -5,7 +5,7 @@ Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.3.5
+Stable tag: 2.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,13 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 2.0.0 =
+* Major Feature: Asynchroner Hintergrund-Auditor: Verwaiste Medien können nun vollautomatisch und non-blocking im Hintergrund gescannt werden - der Browser-Tab muss nicht geöffnet bleiben.
+* Major Feature: Definierbarer Nacht-Modus (Off-Peak): Führt schwere Prüfungen bevorzugt nachts in einem frei definierbaren Zeitfenster (Standard: 02:00 bis 06:00 Uhr) aus. Ist bei Aktivierung von Hintergrund-Tasks automatisch eingeschaltet.
+* Major Feature: Umkehr-Suche (Reverse-Indexing): Durchsucht Seiteninhalte, Gutenberg-Blöcke und Page-Builder einmalig vorab und reduziert die Datenbankabfragen bei Mediathek-Scans um über 95 %.
+* Zero-Downtime & Schutzwall: Adaptives Pacing (Eco, Standard, Turbo), Micro-Sleeps zwischen Abfragen, automatische Cooldown-Pausen bei hoher Serverlast (Load Average) und MySQL MAX_EXECUTION_TIME Safeguards schützen vor Webseiten-Ausfällen.
+* Task-Steuerung im Admin: Hintergrund-Scans können im Dashboard und per WP-CLI jederzeit gestartet, pausiert, fortgesetzt und abgebrochen werden.
 
 = 1.3.5 =
 * Neu: Erkennung von Galerie-Shortcodes & ID-Listen: Der Medien-Auditor erkennt nun zuverlässig Bilder, die als kommaseparierte IDs in Galerie-Shortcodes ([gallery ids="..."], include, images, gallery_ids) eingebunden sind.

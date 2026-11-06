@@ -14,6 +14,7 @@ use ha\ImageOptimizer\Media\BackupManager;
 use ha\ImageOptimizer\Media\AttachmentProcessor;
 use ha\ImageOptimizer\Media\CustomFolderProcessor;
 use ha\ImageOptimizer\Auditor\MediaAuditor;
+use ha\ImageOptimizer\Auditor\BackgroundAuditor;
 use ha\ImageOptimizer\Engine\SizeGuard;
 use WP_CLI;
 
@@ -331,6 +332,21 @@ class OptimizerCliCommand {
 	 * [--reset]
 	 * : Reset and clear the audit cache before scanning.
 	 *
+	 * [--background]
+	 * : Dispatch the audit to run as a background task.
+	 *
+	 * [--status]
+	 * : Check current background audit status.
+	 *
+	 * [--pause]
+	 * : Pause running background audit.
+	 *
+	 * [--resume]
+	 * : Resume paused background audit.
+	 *
+	 * [--cancel]
+	 * : Cancel running background audit.
+	 *
 	 * [--filter=<all|unattached|attached|used>]
 	 * : Filter displayed items (default: unattached).
 	 *
@@ -340,6 +356,8 @@ class OptimizerCliCommand {
 	 * ## EXAMPLES
 	 *
 	 *     wp ha-optimizer audit
+	 *     wp ha-optimizer audit --background
+	 *     wp ha-optimizer audit --status
 	 *     wp ha-optimizer audit --skip-scanned
 	 *     wp ha-optimizer audit --reset
 	 *     wp ha-optimizer audit --filter=all
@@ -352,8 +370,44 @@ class OptimizerCliCommand {
 	 * @return void
 	 */
 	public function audit( array $args, array $assoc_args ): void {
+		if ( ! empty( $assoc_args['status'] ) ) {
+			$state   = BackgroundAuditor::get_state();
+			$total   = (int) ( $state['total'] ?? 0 );
+			$proc    = (int) ( $state['processed'] ?? 0 );
+			$percent = $total > 0 ? round( ( $proc / $total ) * 100 ) : 0;
+			WP_CLI::line( '=== Hintergrund-Audit Status ===' );
+			WP_CLI::line( sprintf( 'Status:      %s', $state['status'] ?? 'idle' ) );
+			WP_CLI::line( sprintf( 'Fortschritt: %d / %d (%d%%)', $proc, $total, $percent ) );
+			WP_CLI::line( sprintf( 'Meldung:     %s', $state['current_status'] ?? '' ) );
+			return;
+		}
+
+		if ( ! empty( $assoc_args['pause'] ) ) {
+			BackgroundAuditor::pause();
+			WP_CLI::success( 'Hintergrund-Audit wurde pausiert.' );
+			return;
+		}
+
+		if ( ! empty( $assoc_args['resume'] ) ) {
+			BackgroundAuditor::resume();
+			WP_CLI::success( 'Hintergrund-Audit wird fortgesetzt.' );
+			return;
+		}
+
+		if ( ! empty( $assoc_args['cancel'] ) ) {
+			BackgroundAuditor::cancel();
+			WP_CLI::success( 'Hintergrund-Audit wurde abgebrochen.' );
+			return;
+		}
+
 		$skip_scanned = ! empty( $assoc_args['skip-scanned'] );
 		$reset        = ! empty( $assoc_args['reset'] );
+
+		if ( ! empty( $assoc_args['background'] ) ) {
+			$state = BackgroundAuditor::start( $skip_scanned, $reset );
+			WP_CLI::success( sprintf( 'Hintergrund-Audit gestartet (%d Medien). Status: %s - %s', (int) ( $state['total'] ?? 0 ), $state['status'] ?? '', $state['current_status'] ?? '' ) );
+			return;
+		}
 
 		if ( $reset ) {
 			MediaAuditor::clear_results();

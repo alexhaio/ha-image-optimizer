@@ -17,6 +17,7 @@ use ha\ImageOptimizer\Admin\MediaColumn;
 use ha\ImageOptimizer\Admin\AjaxHandler;
 use ha\ImageOptimizer\Cli\OptimizerCliCommand;
 use ha\ImageOptimizer\Auditor\MediaAuditor;
+use ha\ImageOptimizer\Auditor\BackgroundAuditor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -58,6 +59,9 @@ class Plugin {
 
 		// Synchronize audit cache when attachments are deleted
 		add_action( 'delete_attachment', [ MediaAuditor::class, 'remove_from_cached_results' ] );
+
+		// Register Background Auditor subsystem (async worker & WP-Cron)
+		BackgroundAuditor::register();
 
 		// Register WP-CLI commands
 		OptimizerCliCommand::register();
@@ -116,5 +120,6 @@ class Plugin {
 	 */
 	public static function deactivate(): void {
 		HtaccessManager::remove_rules();
+		BackgroundAuditor::clear_cron();
 	}
 }

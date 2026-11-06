@@ -609,6 +609,34 @@ namespace {
 				}
 				return [];
 			}
+			if ( str_contains( $query, "post_type NOT IN ('attachment', 'revision')" ) && str_contains( $query, 'ORDER BY ID ASC' ) ) {
+				if ( preg_match( '/ID > (\d+)/', $query, $m ) && (int) $m[1] === 0 ) {
+					return [
+						(object) [
+							'ID'           => 85,
+							'post_title'   => 'Urlaubsreise 2024',
+							'post_type'    => 'post',
+							'post_content' => '<p>Galerie: [gallery ids="8639,8640,8641,8661"] und Bild <img class="wp-image-999" src="/wp-content/uploads/2026/10/landscape-photo-300x200.jpg"></p>',
+						],
+					];
+				}
+				return [];
+			}
+			if ( str_contains( $query, "meta_key IN ('_elementor_data'" ) && str_contains( $query, 'ORDER BY pm.meta_id ASC' ) ) {
+				if ( preg_match( '/pm\.meta_id > (\d+)/', $query, $m ) && (int) $m[1] === 0 ) {
+					return [
+						(object) [
+							'meta_id'    => 1,
+							'post_id'    => 88,
+							'post_title' => 'Elementor Page',
+							'post_type'  => 'page',
+							'meta_key'   => '_elementor_data',
+							'meta_value' => '[{"id":"elem1","settings":{"image":{"id":777,"url":"https://example.com/wp-content/uploads/hero-banner.jpg"}}}]',
+						],
+					];
+				}
+				return [];
+			}
 			if ( str_contains( $query, '_ha_io_data' ) ) {
 				return [
 					(object) [
@@ -682,6 +710,7 @@ namespace HA_Image_Optimizer_Tests {
 	use ha\ImageOptimizer\Delivery\HtaccessManager;
 	use ha\ImageOptimizer\Bulk\ProgressTracker;
 	use ha\ImageOptimizer\Auditor\MediaAuditor;
+	use ha\ImageOptimizer\Auditor\BackgroundAuditor;
 
 	class TestRunner {
 
@@ -709,6 +738,7 @@ namespace HA_Image_Optimizer_Tests {
 			$this->testHtaccessManager();
 			$this->testProgressTracker();
 			$this->testMediaAuditor();
+			$this->testBackgroundAuditorAndPacing();
 			$this->testIndividualCompressionLevel();
 			$this->testTranslations();
 
@@ -1474,6 +1504,97 @@ namespace HA_Image_Optimizer_Tests {
 			@unlink( $dummyImage );
 			@unlink( $backupPath );
 			@rmdir( $uploadsDir );
+		}
+
+		private function testBackgroundAuditorAndPacing(): void {
+			echo "\n12b. Testing Background Auditor, Night Mode, Throttling & Reverse Index...\n";
+
+			// 1. Settings Defaults & Sanitization
+			$defaults = Settings::get_defaults();
+			$this->assert( false === $defaults['auditor_background_enabled'], 'Default auditor_background_enabled is false' );
+			$this->assert( true === $defaults['auditor_night_mode_enabled'], 'Default auditor_night_mode_enabled is true' );
+			$this->assert( '02:00' === $defaults['auditor_night_start'], 'Default auditor_night_start is 02:00' );
+			$this->assert( '06:00' === $defaults['auditor_night_end'], 'Default auditor_night_end is 06:00' );
+			$this->assert( 'standard' === $defaults['auditor_pacing_mode'], 'Default auditor_pacing_mode is standard' );
+			$this->assert( 2.5 === $defaults['auditor_max_server_load'], 'Default auditor_max_server_load is 2.5' );
+			$this->assert( true === $defaults['auditor_reverse_index_enabled'], 'Default auditor_reverse_index_enabled is true' );
+
+			// Test sanitization of background settings
+			$clean = Settings::sanitize( [
+				'auditor_background_enabled' => '1',
+				'auditor_night_start'        => 'invalid',
+				'auditor_night_end'          => '05:30',
+				'auditor_pacing_mode'        => 'invalid_pacing',
+				'auditor_max_server_load'    => '99.9',
+				'auditor_reverse_index_enabled' => '1',
+			] );
+			$this->assert( true === $clean['auditor_background_enabled'], 'auditor_background_enabled sanitized to true' );
+			$this->assert( true === $clean['auditor_night_mode_enabled'], 'auditor_night_mode_enabled defaults to true when background is on' );
+			$this->assert( '02:00' === $clean['auditor_night_start'], 'Invalid night_start falls back to 02:00' );
+			$this->assert( '05:30' === $clean['auditor_night_end'], 'Valid night_end sanitized to 05:30' );
+			$this->assert( 'standard' === $clean['auditor_pacing_mode'], 'Invalid pacing mode falls back to standard' );
+			$this->assert( 2.5 === $clean['auditor_max_server_load'], 'Out-of-bounds server load clamped to 2.5' );
+
+			// 2. Night Window Evaluation (is_night_time)
+			// Window 02:00 to 06:00
+			Settings::update( [ 'auditor_night_start' => '02:00', 'auditor_night_end' => '06:00' ] );
+			$this->assert( BackgroundAuditor::is_night_time( '02:00' ), '02:00 is within 02:00-06:00 night window (start boundary)' );
+			$this->assert( BackgroundAuditor::is_night_time( '04:15' ), '04:15 is within 02:00-06:00 night window' );
+			$this->assert( BackgroundAuditor::is_night_time( '06:00' ), '06:00 is within 02:00-06:00 night window (end boundary)' );
+			$this->assert( ! BackgroundAuditor::is_night_time( '01:59' ), '01:59 is outside 02:00-06:00 night window' );
+			$this->assert( ! BackgroundAuditor::is_night_time( '14:30' ), '14:30 is outside 02:00-06:00 night window' );
+
+			// Window crossing midnight: 22:00 to 06:00
+			Settings::update( [ 'auditor_night_start' => '22:00', 'auditor_night_end' => '06:00' ] );
+			$this->assert( BackgroundAuditor::is_night_time( '23:30' ), '23:30 is within cross-midnight 22:00-06:00 window' );
+			$this->assert( BackgroundAuditor::is_night_time( '03:00' ), '03:00 is within cross-midnight 22:00-06:00 window' );
+			$this->assert( ! BackgroundAuditor::is_night_time( '15:00' ), '15:00 is outside cross-midnight 22:00-06:00 window' );
+			$this->assert( ! BackgroundAuditor::is_night_time( '21:59' ), '21:59 is outside cross-midnight 22:00-06:00 window' );
+
+			// 3. Pacing Configurations & Safeguards
+			Settings::update( [ 'auditor_pacing_mode' => 'eco' ] );
+			$eco = MediaAuditor::get_pacing_config();
+			$this->assert( 3 === $eco['batch_size'] && 1000 === $eco['sleep_ms'] && 1500 === $eco['timeout_ms'], 'Eco pacing config is batch 3, sleep 1000ms, timeout 1500ms' );
+
+			Settings::update( [ 'auditor_pacing_mode' => 'turbo' ] );
+			$turbo = MediaAuditor::get_pacing_config();
+			$this->assert( 25 === $turbo['batch_size'] && 50 === $turbo['sleep_ms'] && 5000 === $turbo['timeout_ms'], 'Turbo pacing config is batch 25, sleep 50ms, timeout 5000ms' );
+
+			Settings::update( [ 'auditor_pacing_mode' => 'standard' ] );
+			$safeguard = MediaAuditor::get_sql_safeguard_prefix();
+			$this->assert( str_contains( $safeguard, 'MAX_EXECUTION_TIME(2500)' ) && str_contains( $safeguard, 'SQL_NO_CACHE' ), 'SQL safeguard contains MAX_EXECUTION_TIME(2500) and SQL_NO_CACHE' );
+
+			// 4. Background Auditor State Machine (start, pause, resume, cancel)
+			Settings::update( [ 'auditor_background_enabled' => true, 'auditor_night_mode_enabled' => false ] );
+			$startState = BackgroundAuditor::start( true, false );
+			$this->assert( in_array( $startState['status'], [ BackgroundAuditor::STATUS_RUNNING, BackgroundAuditor::STATUS_COMPLETED ], true ), 'BackgroundAuditor::start transitions to running/completed' );
+
+			$pausedState = BackgroundAuditor::pause();
+			$this->assert( BackgroundAuditor::STATUS_PAUSED === $pausedState['status'], 'BackgroundAuditor::pause transitions to paused' );
+
+			$resumedState = BackgroundAuditor::resume();
+			$this->assert( BackgroundAuditor::STATUS_RUNNING === $resumedState['status'], 'BackgroundAuditor::resume transitions to running' );
+
+			$cancelledState = BackgroundAuditor::cancel();
+			$this->assert( BackgroundAuditor::STATUS_CANCELLED === $cancelledState['status'], 'BackgroundAuditor::cancel transitions to cancelled' );
+
+			// 5. Reverse Index Building & Verification
+			MediaAuditor::clear_reverse_index();
+			$revIndex = MediaAuditor::build_reverse_index();
+			$this->assert( isset( $revIndex['by_id'][8639] ), 'Reverse index discovered gallery ID 8639 from post content' );
+			$this->assert( isset( $revIndex['by_id'][8640] ), 'Reverse index discovered gallery ID 8640 from post content' );
+			$this->assert( isset( $revIndex['by_id'][8661] ), 'Reverse index discovered gallery ID 8661 from post content' );
+			$this->assert( isset( $revIndex['by_id'][999] ), 'Reverse index discovered wp-image-999 from post content' );
+			$this->assert( isset( $revIndex['by_filename']['landscape-photo-300x200.jpg'] ), 'Reverse index discovered filename landscape-photo-300x200.jpg from post content' );
+			$this->assert( isset( $revIndex['by_id'][777] ), 'Reverse index discovered image ID 777 from Page Builder postmeta' );
+			$this->assert( isset( $revIndex['by_filename']['hero-banner.jpg'] ), 'Reverse index discovered hero-banner.jpg from Page Builder postmeta' );
+
+			// 6. Audit Attachment using Reverse Index
+			$auditRes = MediaAuditor::audit_attachment( 8639, [], true );
+			$this->assert( MediaAuditor::STATUS_USED === $auditRes['status'], 'Attachment 8639 resolved to STATUS_USED via Reverse Index' );
+			$this->assert( str_contains( $auditRes['reference_desc'] ?? '', 'Galerie' ), 'Reference description identifies usage in Galerie' );
+
+			MediaAuditor::clear_reverse_index();
 		}
 
 		private function testTranslations(): void {

@@ -26,11 +26,23 @@ class MediaAuditor {
 	public const OPTION_RESULTS = 'ha_io_audit_results';
 
 	/**
+	 * Transient key for caching the reverse index.
+	 */
+	public const OPTION_REVERSE_INDEX = 'ha_io_audit_reverse_index';
+
+	/**
 	 * Status constants.
 	 */
 	public const STATUS_USED              = 'used';
 	public const STATUS_ATTACHED_UNUSED   = 'attached_unused';
 	public const STATUS_UNATTACHED_UNUSED = 'unattached_unused';
+
+	/**
+	 * In-memory cache for the reverse index.
+	 *
+	 * @var array{by_id: array<int, array<array{label: string, url: string}>>, by_filename: array<string, array<array{label: string, url: string}>>, built_at: int}|null
+	 */
+	private static ?array $reverse_index_cache = null;
 
 	/**
 	 * In-memory cache for active theme file contents.
@@ -59,6 +71,334 @@ class MediaAuditor {
 	 * @var array<string>|null
 	 */
 	private static ?array $existing_builder_meta_keys = null;
+
+	/**
+	 * Get 1-minute server load average if supported by OS (Linux/Unix).
+	 *
+	 * @return float|null
+	 */
+	public static function get_server_load(): ?float {
+		if ( function_exists( 'sys_getloadavg' ) ) {
+			$load = @sys_getloadavg();
+			if ( is_array( $load ) && isset( $load[0] ) && is_numeric( $load[0] ) ) {
+				return (float) $load[0];
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get pacing configuration (batch_size, sleep_ms, max_query_timeout_ms).
+	 *
+	 * @return array{batch_size: int, sleep_ms: int, timeout_ms: int}
+	 */
+	public static function get_pacing_config(): array {
+		$mode = (string) Settings::get( 'auditor_pacing_mode', 'standard' );
+		return match ( $mode ) {
+			'eco' => [
+				'batch_size' => 3,
+				'sleep_ms'   => 1000,
+				'timeout_ms' => 1500,
+			],
+			'turbo' => [
+				'batch_size' => 25,
+				'sleep_ms'   => 50,
+				'timeout_ms' => 5000,
+			],
+			default => [
+				'batch_size' => 10,
+				'sleep_ms'   => 300,
+				'timeout_ms' => 2500,
+			],
+		};
+	}
+
+	/**
+	 * Get SQL optimizer hints and options for non-blocking read safety.
+	 *
+	 * @return string
+	 */
+	public static function get_sql_safeguard_prefix(): string {
+		$pacing = self::get_pacing_config();
+		return sprintf( '/*+ MAX_EXECUTION_TIME(%d) */ SQL_NO_CACHE ', (int) $pacing['timeout_ms'] );
+	}
+
+	/**
+	 * Build or refresh the reverse index across all published/draft content and page builders.
+	 *
+	 * Scans wp_posts and key postmeta once in memory-efficient batches to discover embedded
+	 * image IDs, gallery shortcodes, Gutenberg blocks, and filenames.
+	 *
+	 * @param int $batch_size Number of posts per batch query. Default 200.
+	 * @return array{by_id: array<int, array<array{label: string, url: string}>>, by_filename: array<string, array<array{label: string, url: string}>>, built_at: int}
+	 */
+	public static function build_reverse_index( int $batch_size = 200 ): array {
+		global $wpdb;
+
+		$by_id       = [];
+		$by_filename = [];
+
+		// 1. Scan wp_posts using keyset pagination
+		$last_id = 0;
+		while ( true ) {
+			$posts = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT ID, post_title, post_type, post_content
+					FROM {$wpdb->posts}
+					WHERE post_type NOT IN ('attachment', 'revision')
+					AND post_status != 'trash'
+					AND ID > %d
+					ORDER BY ID ASC
+					LIMIT %d",
+					$last_id,
+					$batch_size
+				)
+			);
+
+			if ( empty( $posts ) ) {
+				break;
+			}
+
+			foreach ( $posts as $p ) {
+				$post_id     = (int) ( $p->ID ?? 0 );
+				$last_id     = max( $last_id, $post_id );
+				$title       = ! empty( $p->post_title ) ? $p->post_title : ( 'ID ' . $post_id );
+				$post_type   = $p->post_type ?? 'post';
+				$type_label  = ( 'wp_template' === $post_type || 'wp_template_part' === $post_type ) ? 'Theme-Template (FSE)' : $post_type;
+				$content_str = (string) ( $p->post_content ?? '' );
+
+				if ( '' === trim( $content_str ) ) {
+					continue;
+				}
+
+				$edit_url = self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' );
+
+				$is_gallery = str_contains( $content_str, '[gallery' )
+					|| str_contains( $content_str, 'wp:gallery' )
+					|| str_contains( $content_str, 'gallery_ids' );
+
+				$default_ref = [
+					'label' => $is_gallery
+						? sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label )
+						: sprintf( __( 'Eingebunden im Inhalt von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+					'url'   => $edit_url,
+				];
+
+				// a) wp-image-123 or attachment_123
+				if ( preg_match_all( '/(?:wp-image-|attachment_)(\d+)/i', $content_str, $matches ) ) {
+					foreach ( $matches[1] as $matched_id ) {
+						$m_id = (int) $matched_id;
+						if ( $m_id > 0 ) {
+							$by_id[ $m_id ][] = $default_ref;
+						}
+					}
+				}
+
+				// b) Gutenberg JSON block attributes "id":123 / "id":"123" / "mediaId":123 / "imageId":123
+				if ( preg_match_all( '/"(?:id|mediaId|imageId|image_id)"\s*:\s*"?(\d+)"?/i', $content_str, $matches ) ) {
+					foreach ( $matches[1] as $matched_id ) {
+						$m_id = (int) $matched_id;
+						if ( $m_id > 0 ) {
+							$by_id[ $m_id ][] = $default_ref;
+						}
+					}
+				}
+
+				// c) Gallery shortcodes [gallery ids="1,2,3"], include="...", images="..."
+				if ( preg_match_all( '/\[gallery[^\]]*(?:ids|include|images|gallery_ids)\s*=\s*["\']([^"\']+)["\']/i', $content_str, $matches ) ) {
+					foreach ( $matches[1] as $csv ) {
+						$ids = array_filter( array_map( 'absint', explode( ',', $csv ) ) );
+						foreach ( $ids as $g_id ) {
+							if ( $g_id > 0 ) {
+								$by_id[ $g_id ][] = [
+									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+									'url'   => $edit_url,
+								];
+							}
+						}
+					}
+				}
+
+				// d) Gutenberg JSON arrays: wp:gallery {"ids":[1,2,3]}
+				if ( preg_match_all( '/"ids"\s*:\s*\[([0-9,\s]+)\]/i', $content_str, $matches ) ) {
+					foreach ( $matches[1] as $csv ) {
+						$ids = array_filter( array_map( 'absint', explode( ',', $csv ) ) );
+						foreach ( $ids as $g_id ) {
+							if ( $g_id > 0 ) {
+								$by_id[ $g_id ][] = [
+									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+									'url'   => $edit_url,
+								];
+							}
+						}
+					}
+				}
+
+				// e) Image filenames in uploads
+				if ( preg_match_all( '#(?:wp-content/uploads/|src=["\'])([^"\'>]+\.(?:jpe?g|png|webp|avif|gif))#i', $content_str, $matches ) ) {
+					foreach ( $matches[1] as $file_match ) {
+						$bname = wp_basename( $file_match );
+						if ( strlen( $bname ) >= 6 ) {
+							$by_filename[ $bname ][] = $default_ref;
+						}
+					}
+				}
+			}
+
+			if ( count( $posts ) < $batch_size ) {
+				break;
+			}
+		}
+
+		// 2. Scan Page Builder postmeta
+		$target_builder_keys = [ '_elementor_data', '_fl_builder_data', '_bricks_page_content_2', 'ct_builder_json' ];
+		$in_b_keys           = "'" . implode( "','", $target_builder_keys ) . "'";
+		$last_pm_id          = 0;
+
+		while ( true ) {
+			$meta_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT pm.meta_id, pm.post_id, pm.meta_key, pm.meta_value, p.post_title, p.post_type
+					FROM {$wpdb->postmeta} pm
+					INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
+					WHERE pm.meta_key IN ({$in_b_keys})
+					AND p.post_status != 'trash'
+					AND pm.meta_id > %d
+					ORDER BY pm.meta_id ASC
+					LIMIT %d",
+					$last_pm_id,
+					$batch_size
+				)
+			);
+
+			if ( empty( $meta_rows ) ) {
+				break;
+			}
+
+			foreach ( $meta_rows as $mr ) {
+				$last_pm_id = max( $last_pm_id, (int) $mr->meta_id );
+				$post_id    = (int) ( $mr->post_id ?? 0 );
+				$title      = ! empty( $mr->post_title ) ? $mr->post_title : ( 'ID ' . $post_id );
+				$meta_k     = (string) ( $mr->meta_key ?? '' );
+				$meta_v     = (string) ( $mr->meta_value ?? '' );
+
+				$builder_name = 'Page Builder';
+				if ( str_contains( $meta_k, 'elementor' ) ) {
+					$builder_name = 'Elementor Layout';
+				} elseif ( str_contains( $meta_k, 'fl_builder' ) ) {
+					$builder_name = 'Beaver Builder';
+				} elseif ( str_contains( $meta_k, 'bricks' ) ) {
+					$builder_name = 'Bricks Builder';
+				} elseif ( str_contains( $meta_k, 'ct_builder' ) ) {
+					$builder_name = 'Oxygen Builder';
+				}
+
+				$builder_ref = [
+					'label' => sprintf( __( '%1$s in "%2$s" (#%3$d)', 'ha-image-optimizer' ), $builder_name, $title, $post_id ),
+					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
+				];
+
+				// Extract ID references from builder JSON/data
+				if ( preg_match_all( '/"(?:id|imageId|mediaId|image_id)"\s*:\s*"?(\d+)"?/i', $meta_v, $matches ) ) {
+					foreach ( $matches[1] as $matched_id ) {
+						$m_id = (int) $matched_id;
+						if ( $m_id > 0 ) {
+							$by_id[ $m_id ][] = $builder_ref;
+						}
+					}
+				}
+
+				// Extract filenames
+				if ( preg_match_all( '#(?:wp-content/uploads/|url["\']?\s*:\s*["\'])([^"\'>]+\.(?:jpe?g|png|webp|avif|gif))#i', $meta_v, $matches ) ) {
+					foreach ( $matches[1] as $file_match ) {
+						$bname = wp_basename( $file_match );
+						if ( strlen( $bname ) >= 6 ) {
+							$by_filename[ $bname ][] = $builder_ref;
+						}
+					}
+				}
+			}
+
+			if ( count( $meta_rows ) < $batch_size ) {
+				break;
+			}
+		}
+
+		// Deduplicate references
+		foreach ( $by_id as $id => $refs ) {
+			$seen    = [];
+			$deduped = [];
+			foreach ( $refs as $r ) {
+				$lbl = $r['label'] ?? '';
+				if ( ! isset( $seen[ $lbl ] ) ) {
+					$seen[ $lbl ] = true;
+					$deduped[]    = $r;
+				}
+			}
+			$by_id[ $id ] = array_slice( $deduped, 0, 5 );
+		}
+
+		foreach ( $by_filename as $fn => $refs ) {
+			$seen    = [];
+			$deduped = [];
+			foreach ( $refs as $r ) {
+				$lbl = $r['label'] ?? '';
+				if ( ! isset( $seen[ $lbl ] ) ) {
+					$seen[ $lbl ] = true;
+					$deduped[]    = $r;
+				}
+			}
+			$by_filename[ $fn ] = array_slice( $deduped, 0, 3 );
+		}
+
+		$index = [
+			'by_id'       => $by_id,
+			'by_filename' => $by_filename,
+			'built_at'    => time(),
+		];
+
+		$twelve_hours = defined( 'HOUR_IN_SECONDS' ) ? 12 * HOUR_IN_SECONDS : 43200;
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( self::OPTION_REVERSE_INDEX, $index, $twelve_hours );
+		}
+
+		self::$reverse_index_cache = $index;
+		return $index;
+	}
+
+	/**
+	 * Get the cached reverse index or build it if not available.
+	 *
+	 * @param bool $force_rebuild Whether to force a rebuild. Default false.
+	 * @return array{by_id: array<int, array<array{label: string, url: string}>>, by_filename: array<string, array<array{label: string, url: string}>>, built_at: int}
+	 */
+	public static function get_reverse_index( bool $force_rebuild = false ): array {
+		if ( ! $force_rebuild && null !== self::$reverse_index_cache ) {
+			return self::$reverse_index_cache;
+		}
+
+		if ( ! $force_rebuild && function_exists( 'get_transient' ) ) {
+			$cached = get_transient( self::OPTION_REVERSE_INDEX );
+			if ( is_array( $cached ) && isset( $cached['by_id'], $cached['by_filename'] ) ) {
+				self::$reverse_index_cache = $cached;
+				return self::$reverse_index_cache;
+			}
+		}
+
+		return self::build_reverse_index();
+	}
+
+	/**
+	 * Clear cached reverse index.
+	 *
+	 * @return void
+	 */
+	public static function clear_reverse_index(): void {
+		self::$reverse_index_cache = null;
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::OPTION_REVERSE_INDEX );
+		}
+	}
 
 	/**
 	 * Get list of all eligible media attachment IDs to audit.
@@ -771,6 +1111,34 @@ class MediaAuditor {
 		}
 
 		// -------------------------------------------------------------
+		// 4c. Fast In-Memory Reverse Index (Content, Gutenberg, Page Builders)
+		// -------------------------------------------------------------
+		if ( Settings::get( 'auditor_reverse_index_enabled', true ) ) {
+			$rev_index = self::get_reverse_index();
+
+			// 1. Check by Attachment ID
+			if ( ! empty( $rev_index['by_id'][ $attachment_id ] ) ) {
+				$references = array_merge( $references, (array) $rev_index['by_id'][ $attachment_id ] );
+				if ( $early_exit ) {
+					return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+				}
+			}
+
+			// 2. Check by Basename or Sub-Size Filenames
+			foreach ( $search_variants['safe_filenames'] as $sfn ) {
+				if ( ! empty( $rev_index['by_filename'][ $sfn ] ) ) {
+					$references = array_merge( $references, (array) $rev_index['by_filename'][ $sfn ] );
+					if ( $early_exit ) {
+						return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+					}
+					break;
+				}
+			}
+		}
+
+		$safeguard = self::get_sql_safeguard_prefix();
+
+		// -------------------------------------------------------------
 		// 5. Content References (Gutenberg blocks, HTML <img>, Galleries, Shortcodes)
 		// -------------------------------------------------------------
 		$id_str = (string) $attachment_id;
@@ -856,7 +1224,7 @@ class MediaAuditor {
 
 		$where_content = implode( ' OR ', $like_clauses );
 		$content_sql   = $wpdb->prepare(
-			"SELECT p.ID, p.post_title, p.post_type, p.post_content FROM {$wpdb->posts} p
+			"SELECT {$safeguard}p.ID, p.post_title, p.post_type, p.post_content FROM {$wpdb->posts} p
 			WHERE p.post_type NOT IN ('attachment', 'revision')
 			AND p.post_status != 'trash'
 			AND ({$where_content})
@@ -966,7 +1334,7 @@ class MediaAuditor {
 			$where_builder = implode( ' OR ', $builder_like_clauses );
 			$in_keys_sql   = "'" . implode( "','", array_map( 'esc_sql', self::$existing_builder_meta_keys ) ) . "'";
 			$builder_sql   = $wpdb->prepare(
-				"SELECT p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
+				"SELECT {$safeguard}p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
 				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
 				WHERE pm.meta_key IN ({$in_keys_sql})
 				AND ({$where_builder})
@@ -1015,7 +1383,7 @@ class MediaAuditor {
 		// 7. Custom Postmeta & ACF (Advanced Custom Fields, Theme Galleries)
 		// -------------------------------------------------------------
 		$acf_sql = $wpdb->prepare(
-			"SELECT p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
+			"SELECT {$safeguard}p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
 			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
 			WHERE pm.meta_key NOT LIKE '\_%'
 			AND pm.meta_key NOT IN ('_wp_attached_file', '_wp_attachment_metadata')
@@ -1098,7 +1466,7 @@ class MediaAuditor {
 		$where_pm = implode( ' OR ', $pm_clauses );
 		$other_postmeta = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT p.ID, p.post_title, p.post_type, pm.meta_key
+				"SELECT {$safeguard}p.ID, p.post_title, p.post_type, pm.meta_key
 				FROM {$wpdb->postmeta} pm
 				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
 				WHERE pm.post_id != %d
@@ -2151,6 +2519,7 @@ class MediaAuditor {
 		self::$custom_tables_cache        = null;
 		self::$generic_custom_tables_cache = null;
 		self::$existing_builder_meta_keys = null;
+		self::clear_reverse_index();
 		if ( function_exists( 'delete_transient' ) ) {
 			delete_transient( 'ha_io_audit_tables_schema' );
 		}

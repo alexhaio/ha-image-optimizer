@@ -11,7 +11,9 @@
 		let auditProcessed = 0;
 		let alreadyScanned = 0;
 		let isRunning = false;
-		const batchSize = 10; // 10 attachments per batch query to prevent long MySQL locks
+		const pacing = (ha_io_audit_vars && ha_io_audit_vars.pacing) || {};
+		const batchSize = pacing.batch_size || 10;
+		const sleepMs = pacing.sleep_ms || 300;
 
 		function updateScanButtonLabel() {
 			if (isRunning) return;
@@ -154,14 +156,14 @@
 					// Breather between batches to yield MySQL thread pool and keep server responsive
 					setTimeout(function () {
 						processNextAuditBatch();
-					}, 150);
+					}, sleepMs);
 				},
 				error: function () {
 					auditProcessed += chunk.length;
 					updateProgress();
 					setTimeout(function () {
 						processNextAuditBatch();
-					}, 150);
+					}, sleepMs);
 				}
 			});
 		}
@@ -463,6 +465,169 @@
 				}
 			});
 		});
+
+		// -------------------------------------------------------------
+		// 5. Background Task Controls & Live Polling
+		// -------------------------------------------------------------
+		let bgPollTimer = null;
+
+		function updateBackgroundUI(state) {
+			if (!state) return;
+
+			const status = state.status || 'idle';
+			const processed = state.processed || 0;
+			const total = state.total || 0;
+			const percent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : (status === 'completed' ? 100 : 0);
+
+			let badgeHtml = status;
+			let badgeBg = '#eee';
+			let badgeColor = '#333';
+
+			if (status === 'running') {
+				badgeHtml = '🟢 ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.running) || 'Läuft');
+				badgeBg = '#dafbe1';
+				badgeColor = '#1a7f37';
+			} else if (status === 'waiting_night') {
+				badgeHtml = '🌙 ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.waiting_night) || 'Wartet auf Nachtfenster');
+				badgeBg = '#fbefff';
+				badgeColor = '#8250df';
+			} else if (status === 'cooldown') {
+				badgeHtml = '❄️ ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.cooldown) || 'Serverlast-Abkühlung');
+				badgeBg = '#fff8c5';
+				badgeColor = '#9a6700';
+			} else if (status === 'paused') {
+				badgeHtml = '⏸️ ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.paused) || 'Pausiert');
+				badgeBg = '#fff8c5';
+				badgeColor = '#9a6700';
+			} else if (status === 'completed') {
+				badgeHtml = '✅ ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.completed) || 'Abgeschlossen');
+				badgeBg = '#dafbe1';
+				badgeColor = '#1a7f37';
+			} else if (status === 'cancelled') {
+				badgeHtml = '⏹️ ' + ((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.cancelled) || 'Abgebrochen');
+				badgeBg = '#ffebe9';
+				badgeColor = '#cf222e';
+			}
+
+			$('#ha-io-bg-badge').html(badgeHtml).css({ 'background': badgeBg, 'color': badgeColor });
+			$('#ha-io-bg-status-msg').text(state.current_status || '');
+			$('#ha-io-bg-progress-counts').text(processed + ' / ' + total + ' (' + percent + '%)');
+			$('#ha-io-bg-progress-bar').css('width', percent + '%');
+
+			if (status === 'running' || status === 'waiting_night' || status === 'cooldown') {
+				$('#ha-io-bg-progress-wrapper').slideDown();
+				$('#ha-io-btn-bg-start').prop('disabled', true);
+				$('#ha-io-btn-bg-pause').prop('disabled', false);
+				$('#ha-io-btn-bg-cancel').prop('disabled', false);
+			} else if (status === 'paused') {
+				$('#ha-io-bg-progress-wrapper').slideDown();
+				$('#ha-io-btn-bg-start').prop('disabled', false);
+				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.resume_scan) || 'Hintergrund-Scan fortsetzen');
+				$('#ha-io-btn-bg-pause').prop('disabled', true);
+				$('#ha-io-btn-bg-cancel').prop('disabled', false);
+			} else {
+				$('#ha-io-btn-bg-start').prop('disabled', false);
+				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.start_scan) || 'Hintergrund-Scan starten');
+				$('#ha-io-btn-bg-pause').prop('disabled', true);
+				$('#ha-io-btn-bg-cancel').prop('disabled', true);
+			}
+		}
+
+		function pollBackgroundStatus() {
+			if (bgPollTimer) clearTimeout(bgPollTimer);
+
+			$.ajax({
+				url: ha_io_audit_vars.ajax_url,
+				method: 'POST',
+				data: {
+					action: 'ha_io_audit_background_status',
+					nonce: ha_io_audit_vars.nonce
+				},
+				success: function (res) {
+					if (res.success && res.data && res.data.state) {
+						updateBackgroundUI(res.data.state);
+
+						if (res.data.summary) {
+							updateMetricCards(res.data.summary);
+						}
+
+						const status = res.data.state.status;
+						if (status === 'running' || status === 'waiting_night' || status === 'cooldown') {
+							bgPollTimer = setTimeout(pollBackgroundStatus, 3000);
+						}
+					}
+				}
+			});
+		}
+
+		$('#ha-io-btn-bg-start').on('click', function () {
+			const isPaused = $('#ha-io-btn-bg-start-text').text().indexOf('fortsetzen') !== -1;
+			const action = isPaused ? 'ha_io_audit_background_resume' : 'ha_io_audit_background_start';
+			const skipScanned = $('#ha-io-audit-skip-scanned').is(':checked') ? 1 : 0;
+
+			$(this).prop('disabled', true);
+			$.ajax({
+				url: ha_io_audit_vars.ajax_url,
+				method: 'POST',
+				data: {
+					action: action,
+					nonce: ha_io_audit_vars.nonce,
+					skip_scanned: skipScanned,
+					reset_cache: 0
+				},
+				success: function (res) {
+					if (res.success && res.data && res.data.state) {
+						updateBackgroundUI(res.data.state);
+						pollBackgroundStatus();
+					}
+				}
+			});
+		});
+
+		$('#ha-io-btn-bg-pause').on('click', function () {
+			$(this).prop('disabled', true);
+			$.ajax({
+				url: ha_io_audit_vars.ajax_url,
+				method: 'POST',
+				data: {
+					action: 'ha_io_audit_background_pause',
+					nonce: ha_io_audit_vars.nonce
+				},
+				success: function (res) {
+					if (res.success && res.data && res.data.state) {
+						updateBackgroundUI(res.data.state);
+					}
+				}
+			});
+		});
+
+		$('#ha-io-btn-bg-cancel').on('click', function () {
+			if (!confirm((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.confirm_cancel) || 'Laufenden Hintergrund-Scan abbrechen?')) {
+				return;
+			}
+			$(this).prop('disabled', true);
+			$.ajax({
+				url: ha_io_audit_vars.ajax_url,
+				method: 'POST',
+				data: {
+					action: 'ha_io_audit_background_cancel',
+					nonce: ha_io_audit_vars.nonce
+				},
+				success: function (res) {
+					if (res.success && res.data && res.data.state) {
+						updateBackgroundUI(res.data.state);
+					}
+				}
+			});
+		});
+
+		// Auto-poll if background task is active on page load
+		if (ha_io_audit_vars.background_enabled && ha_io_audit_vars.background_state) {
+			const initialStatus = ha_io_audit_vars.background_state.status;
+			if (initialStatus === 'running' || initialStatus === 'waiting_night' || initialStatus === 'cooldown') {
+				pollBackgroundStatus();
+			}
+		}
 
 		function formatBytes(bytes) {
 			if (bytes === 0) return '0 B';

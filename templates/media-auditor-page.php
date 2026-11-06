@@ -42,6 +42,15 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 		<span style="background: #e7f3ff; color: #0969da; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
 			🌐 <?php esc_html_e( 'Universeller DB-Scan: Aktiv', 'ha-image-optimizer' ); ?>
 		</span>
+		<span style="background: #dafbe1; color: #1a7f37; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
+			⚡ <?php esc_html_e( 'Umkehr-Suche: Aktiv', 'ha-image-optimizer' ); ?>
+		</span>
+		<?php $is_bg = (bool) \ha\ImageOptimizer\Common\Settings::get( 'auditor_background_enabled', false ); ?>
+		<?php if ( $is_bg ) : ?>
+			<span style="background: #fbefff; color: #8250df; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
+				🌙 <?php esc_html_e( 'Hintergrund-Tasks: Aktiv', 'ha-image-optimizer' ); ?>
+			</span>
+		<?php endif; ?>
 		<?php $cur_safety = (int) \ha\ImageOptimizer\Common\Settings::get( 'auditor_safety_buffer_days', 0 ); ?>
 		<?php if ( $cur_safety > 0 ) : ?>
 			<span style="background: #dafbe1; color: #1a7f37; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
@@ -88,11 +97,76 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 
 	<!-- Scan Control Card -->
 	<div class="ha-io-card">
+		<?php
+		$bg_status     = $bg_state['status'] ?? 'idle';
+		$bg_is_active  = in_array( $bg_status, [ 'running', 'waiting_night', 'cooldown' ], true );
+		$bg_is_paused  = ( 'paused' === $bg_status );
+		$bg_processed  = (int) ( $bg_state['processed'] ?? 0 );
+		$bg_total      = (int) ( $bg_state['total'] ?? 0 );
+		$bg_percent    = $bg_total > 0 ? min( 100, round( ( $bg_processed / $bg_total ) * 100 ) ) : ( 'completed' === $bg_status ? 100 : 0 );
+		$night_enabled = (bool) \ha\ImageOptimizer\Common\Settings::get( 'auditor_night_mode_enabled', true );
+		$night_start   = (string) \ha\ImageOptimizer\Common\Settings::get( 'auditor_night_start', '02:00' );
+		$night_end     = (string) \ha\ImageOptimizer\Common\Settings::get( 'auditor_night_end', '06:00' );
+		?>
+
+		<?php if ( $bg_enabled ) : ?>
+			<!-- Background Tasks Control Panel -->
+			<div id="ha-io-bg-control-panel" style="margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid #e5e5e5;">
+				<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+					<div>
+						<h2 style="margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+							🌙 <?php esc_html_e( 'Automatischer Hintergrund-Scan', 'ha-image-optimizer' ); ?>
+							<span id="ha-io-bg-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: normal; background: #eee;">
+								<?php echo esc_html( ucfirst( $bg_status ) ); ?>
+							</span>
+						</h2>
+						<p style="margin: 0; color: #555; font-size: 13px;">
+							<?php
+							if ( $night_enabled ) {
+								printf(
+									esc_html__( 'Läuft schonend in Teilschritten im Server-Hintergrund – bevorzugt im Nachtfenster (%1$s – %2$s Uhr). Du kannst dieses Browserfenster jederzeit schließen.', 'ha-image-optimizer' ),
+									esc_html( $night_start ),
+									esc_html( $night_end )
+								);
+							} else {
+								esc_html_e( 'Läuft schonend in Teilschritten asynchron im Server-Hintergrund. Du kannst dieses Browserfenster jederzeit schließen.', 'ha-image-optimizer' );
+							}
+							?>
+						</p>
+					</div>
+
+					<!-- Background Action Buttons -->
+					<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+						<button type="button" class="button button-primary" id="ha-io-btn-bg-start" <?php disabled( $bg_is_active ); ?>>
+							▶️ <span id="ha-io-btn-bg-start-text"><?php echo $bg_is_paused ? esc_html__( 'Hintergrund-Scan fortsetzen', 'ha-image-optimizer' ) : esc_html__( 'Hintergrund-Scan starten', 'ha-image-optimizer' ); ?></span>
+						</button>
+						<button type="button" class="button button-secondary" id="ha-io-btn-bg-pause" <?php disabled( ! $bg_is_active ); ?>>
+							⏸️ <?php esc_html_e( 'Pausieren', 'ha-image-optimizer' ); ?>
+						</button>
+						<button type="button" class="button button-secondary" id="ha-io-btn-bg-cancel" style="color: #cf222e;" <?php disabled( 'idle' === $bg_status || 'completed' === $bg_status || 'cancelled' === $bg_status ); ?>>
+							⏹️ <?php esc_html_e( 'Abbrechen', 'ha-image-optimizer' ); ?>
+						</button>
+					</div>
+				</div>
+
+				<!-- Background Progress Bar -->
+				<div id="ha-io-bg-progress-wrapper" style="<?php echo ( 'idle' === $bg_status ) ? 'display: none;' : ''; ?> margin-top: 10px;">
+					<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; font-weight: 600;">
+						<span id="ha-io-bg-status-msg"><?php echo esc_html( $bg_state['current_status'] ?? '' ); ?></span>
+						<span id="ha-io-bg-progress-counts"><?php echo esc_html( $bg_processed ); ?> / <?php echo esc_html( $bg_total ); ?> (<?php echo esc_html( $bg_percent ); ?>%)</span>
+					</div>
+					<div class="ha-io-progress" style="height: 10px;">
+						<div class="ha-io-progress-bar <?php echo $bg_is_active ? 'ha-io-progress-bar-striped active' : ''; ?>" id="ha-io-bg-progress-bar" style="width: <?php echo esc_attr( $bg_percent ); ?>%;"></div>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
+
 		<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 			<div>
-				<h2 style="margin: 0 0 6px 0;">🔍 <?php esc_html_e( 'Mediathek-Scan durchführen', 'ha-image-optimizer' ); ?></h2>
+				<h2 style="margin: 0 0 6px 0;">🔍 <?php esc_html_e( 'Manueller Sofort-Scan im Browser', 'ha-image-optimizer' ); ?></h2>
 				<p style="margin: 0; color: #555;">
-					<?php esc_html_e( 'Starte die Prüfung, um alle Bilder auf ihre tatsächliche Verwendung zu analysieren. Der Scan läuft schonend per AJAX im Hintergrund.', 'ha-image-optimizer' ); ?>
+					<?php esc_html_e( 'Prüft Bilder live im geöffneten Browserfenster per AJAX mit Vorindexierung und Zero-Downtime-Schutz.', 'ha-image-optimizer' ); ?>
 				</p>
 			</div>
 			<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">

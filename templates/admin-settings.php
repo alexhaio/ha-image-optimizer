@@ -313,6 +313,94 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 				</tr>
 
 				<tr>
+					<th scope="row"><?php esc_html_e( 'Umkehr-Suche (Reverse-Indexing)', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="ha_io_settings[auditor_reverse_index_enabled]" value="1" <?php checked( $settings['auditor_reverse_index_enabled'] ?? true ); ?>>
+							<strong><?php esc_html_e( 'Inhalts-Vorindexierung für blitzschnelle Abfragen (Empfohlen)', 'ha-image-optimizer' ); ?></strong>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Scannt Beiträge und Page-Builder einmalig strukturiert vorab und erkennt Bildreferenzen in Millisekunden im Arbeitsspeicher. Verhindert tausende separate SQL-Full-Table-Scans und entlastet die Datenbank drastisch.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Hintergrund-Tasks (Asynchron)', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="ha_io_settings[auditor_background_enabled]" id="ha-io-auditor-bg-enabled" value="1" <?php checked( $settings['auditor_background_enabled'] ?? false ); ?>>
+							<strong><?php esc_html_e( 'Medien-Audit automatisch im Hintergrund ausführen', 'ha-image-optimizer' ); ?></strong>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Ermöglicht das Durchführen des Scans in schonenden Teilschritten im Server-Hintergrund (via Non-Blocking HTTP & WP-Cron). Der Browser-Tab muss während des Scans nicht geöffnet bleiben.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Nacht-Modus (Off-Peak Zeitfenster)', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label style="display: block; margin-bottom: 8px;">
+							<input type="checkbox" name="ha_io_settings[auditor_night_mode_enabled]" id="ha-io-auditor-night-enabled" value="1" <?php checked( $settings['auditor_night_mode_enabled'] ?? true ); ?>>
+							<strong><?php esc_html_e( 'Hintergrund-Scan nur nachts ausführen (Automatisch aktiv bei Hintergrund-Tasks)', 'ha-image-optimizer' ); ?></strong>
+						</label>
+						<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+							<span><?php esc_html_e( 'Von:', 'ha-image-optimizer' ); ?></span>
+							<input type="time" name="ha_io_settings[auditor_night_start]" value="<?php echo esc_attr( $settings['auditor_night_start'] ?? '02:00' ); ?>" style="width: 100px;">
+							<span><?php esc_html_e( 'bis:', 'ha-image-optimizer' ); ?></span>
+							<input type="time" name="ha_io_settings[auditor_night_end]" value="<?php echo esc_attr( $settings['auditor_night_end'] ?? '06:00' ); ?>" style="width: 100px;">
+							<span style="color: #666; font-size: 12px;">(<?php printf( esc_html__( 'Aktuelle Serverzeit: %s Uhr', 'ha-image-optimizer' ), esc_html( function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : date( 'H:i' ) ) ); ?>)</span>
+						</div>
+						<p class="description">
+							<?php esc_html_e( 'Außerhalb dieses Fensters pausiert der Hintergrund-Scan automatisch und wartet auf die verkehrsarmen Nachtstunden. Schützt Live-Besucher zu 100 % vor Datenbanklast.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Arbeits-Intensität & Pacing', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<?php $cur_pacing = $settings['auditor_pacing_mode'] ?? 'standard'; ?>
+						<select name="ha_io_settings[auditor_pacing_mode]" style="min-width: 280px;">
+							<option value="eco" <?php selected( 'eco', $cur_pacing ); ?>>
+								🌱 <?php esc_html_e( 'Eco (Schonend: 3 Bilder / Schritt, 1s Pause – minimale Serverlast)', 'ha-image-optimizer' ); ?>
+							</option>
+							<option value="standard" <?php selected( 'standard', $cur_pacing ); ?>>
+								⚡ <?php esc_html_e( 'Standard (Ausgewogen: 10 Bilder / Schritt, 300ms Pause)', 'ha-image-optimizer' ); ?>
+							</option>
+							<option value="turbo" <?php selected( 'turbo', $cur_pacing ); ?>>
+								🚀 <?php esc_html_e( 'Turbo (Schnell: 25 Bilder / Schritt, 50ms Pause – für starke Server)', 'ha-image-optimizer' ); ?>
+							</option>
+						</select>
+						<p class="description">
+							<?php esc_html_e( 'Legt fest, wie viele Bilder pro Teilschritt geprüft werden und wie lange die Abkühlpause zwischen den Abfragen ist.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Serverlast-Schutzwall (Max. Load)', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label>
+							<input type="number" step="0.1" min="0.5" max="50.0" name="ha_io_settings[auditor_max_server_load]" value="<?php echo esc_attr( $settings['auditor_max_server_load'] ?? 2.5 ); ?>" style="width: 80px;">
+							<?php esc_html_e( 'Maximaler Load-Average (1 Min.)', 'ha-image-optimizer' ); ?>
+						</label>
+						<?php
+						$current_load = MediaAuditor::get_server_load();
+						if ( null !== $current_load ) :
+						?>
+							<span style="color: #666; font-size: 12px; margin-left: 8px;">
+								(<?php printf( esc_html__( 'Aktueller Server-Load: %s', 'ha-image-optimizer' ), number_format( $current_load, 2 ) ); ?>)
+							</span>
+						<?php endif; ?>
+						<p class="description">
+							<?php esc_html_e( 'Steigt die Serverlast über diesen Wert, pausiert der Scan automatisch für eine Abkühlphase (Cooldown), bis sich der Server wieder beruhigt hat.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
 					<th scope="row"><?php esc_html_e( 'Universeller Datenbank-Scan', 'ha-image-optimizer' ); ?></th>
 					<td>
 						<label>

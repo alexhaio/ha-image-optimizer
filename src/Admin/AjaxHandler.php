@@ -14,6 +14,7 @@ use ha\ImageOptimizer\Bulk\ProgressTracker;
 use ha\ImageOptimizer\Common\Settings;
 use ha\ImageOptimizer\Media\CustomFolderProcessor;
 use ha\ImageOptimizer\Auditor\MediaAuditor;
+use ha\ImageOptimizer\Auditor\BackgroundAuditor;
 use ha\ImageOptimizer\Engine\SizeGuard;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,6 +47,13 @@ class AjaxHandler {
 		add_action( 'wp_ajax_ha_io_audit_trash_single', [ __CLASS__, 'handle_audit_trash_single' ] );
 		add_action( 'wp_ajax_ha_io_audit_restore_single', [ __CLASS__, 'handle_audit_restore_single' ] );
 		add_action( 'wp_ajax_ha_io_audit_clear', [ __CLASS__, 'handle_audit_clear' ] );
+
+		// Media Auditor Background Actions
+		add_action( 'wp_ajax_ha_io_audit_background_start', [ __CLASS__, 'handle_audit_background_start' ] );
+		add_action( 'wp_ajax_ha_io_audit_background_pause', [ __CLASS__, 'handle_audit_background_pause' ] );
+		add_action( 'wp_ajax_ha_io_audit_background_resume', [ __CLASS__, 'handle_audit_background_resume' ] );
+		add_action( 'wp_ajax_ha_io_audit_background_cancel', [ __CLASS__, 'handle_audit_background_cancel' ] );
+		add_action( 'wp_ajax_ha_io_audit_background_status', [ __CLASS__, 'handle_audit_background_status' ] );
 	}
 
 	/**
@@ -412,6 +420,99 @@ class AjaxHandler {
 
 		MediaAuditor::clear_results();
 		wp_send_json_success( [ 'message' => esc_html__( 'Audit-Cache erfolgreich geleert.', 'ha-image-optimizer' ) ] );
+	}
+
+	/**
+	 * Start background audit.
+	 *
+	 * @return void
+	 */
+	public static function handle_audit_background_start(): void {
+		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+		}
+
+		$skip_scanned = ! empty( $_POST['skip_scanned'] );
+		$reset_cache  = ! empty( $_POST['reset_cache'] );
+
+		$state = BackgroundAuditor::start( $skip_scanned, $reset_cache );
+		wp_send_json_success( [ 'state' => $state ] );
+	}
+
+	/**
+	 * Pause background audit.
+	 *
+	 * @return void
+	 */
+	public static function handle_audit_background_pause(): void {
+		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+		}
+
+		$state = BackgroundAuditor::pause();
+		wp_send_json_success( [ 'state' => $state ] );
+	}
+
+	/**
+	 * Resume background audit.
+	 *
+	 * @return void
+	 */
+	public static function handle_audit_background_resume(): void {
+		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+		}
+
+		$state = BackgroundAuditor::resume();
+		wp_send_json_success( [ 'state' => $state ] );
+	}
+
+	/**
+	 * Cancel background audit.
+	 *
+	 * @return void
+	 */
+	public static function handle_audit_background_cancel(): void {
+		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+		}
+
+		$state = BackgroundAuditor::cancel();
+		wp_send_json_success( [ 'state' => $state ] );
+	}
+
+	/**
+	 * Get current background audit status.
+	 *
+	 * @return void
+	 */
+	public static function handle_audit_background_status(): void {
+		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+		}
+
+		$state   = BackgroundAuditor::get_state();
+		$cached  = MediaAuditor::get_cached_results();
+		$summary = [
+			'counts'            => $cached['counts'] ?? [],
+			'reclaimable_bytes' => $cached['reclaimable_bytes'] ?? [],
+			'total_items'       => count( $cached['items'] ?? [] ),
+		];
+
+		wp_send_json_success( [
+			'state'   => $state,
+			'summary' => $summary,
+		] );
 	}
 }
 
