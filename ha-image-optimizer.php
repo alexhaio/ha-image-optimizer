@@ -61,7 +61,35 @@ function ha_io_get_updater() {
 	);
 
 	$update_checker->setBranch( 'main' );
-	$update_checker->getVcsApi()->enableReleaseAssets();
+	$update_checker->getVcsApi()->enableReleaseAssets( '/^ha-image-optimizer(-[0-9.]+)?\.zip$/i' );
+
+	// Sicherstellen, dass GitHub API Release-Assets immer als Binary Stream (Octet-Stream) angefordert werden:
+	add_filter(
+		'http_request_args',
+		static function( $args, $url = '' ) {
+			if ( is_string( $url ) && false !== strpos( $url, 'api.github.com' ) && false !== strpos( $url, '/releases/assets/' ) ) {
+				if ( ! isset( $args['headers'] ) || ! is_array( $args['headers'] ) ) {
+					$args['headers'] = [];
+				}
+				$args['headers']['Accept'] = 'application/octet-stream';
+			}
+			return $args;
+		},
+		10,
+		2
+	);
+
+	// Sicherstellen, dass bei S3/Azure Storage Redirects (z. B. release-assets.githubusercontent.com)
+	// Authorization-Header entfernt werden, um Auth-Konflikte zu vermeiden (kompatibel mit Requests v1 & v2):
+	$strip_redirect_auth = static function( &$location, &$headers = null ) {
+		if ( is_string( $location ) && false === strpos( $location, 'api.github.com' ) && false === strpos( $location, 'github.com' ) ) {
+			if ( is_array( $headers ) && isset( $headers['Authorization'] ) ) {
+				unset( $headers['Authorization'] );
+			}
+		}
+	};
+	add_action( 'requests.before_redirect', $strip_redirect_auth, 10, 2 );
+	add_action( 'requests-requests.before_redirect', $strip_redirect_auth, 10, 2 );
 
 	$token = defined( 'HA_GITHUB_UPDATE_TOKEN' ) ? HA_GITHUB_UPDATE_TOKEN : '';
 	if ( empty( $token ) && defined( 'GITHUB_ACCESS_TOKEN' ) ) {
