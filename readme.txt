@@ -1,5 +1,5 @@
 === HA Image Optimizer ===
-Contributors: mystryx1337
+Contributors: alexhaio
 Donate link: https://seo-hacker.de/
 Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0

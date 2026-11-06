@@ -44,7 +44,7 @@ Leistungsstarke, rein lokale Bildoptimierung für WordPress – entwickelt für 
 1. Lade das Repository als ZIP herunter oder klone es in dein WordPress-Plugin-Verzeichnis:
    ```bash
    cd wp-content/plugins/
-   git clone https://github.com/mystryx1337/ha-image-optimizer.git
+   git clone https://github.com/alexhaio/ha-image-optimizer.git
    ```
 2. Aktiviere das Plugin im WordPress-Admin unter **Plugins**.
 3. Navigiere zu **Einstellungen → HA Image Optimizer**, um Optionen anzupassen oder die Massenoptimierung zu starten.

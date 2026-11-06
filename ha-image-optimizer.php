@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       HA Image Optimizer
- * Plugin URI:        https://github.com/mystryx1337/ha-image-optimizer
+ * Plugin URI:        https://github.com/alexhaio/ha-image-optimizer
  * Description:       Leistungsstarke, rein lokale Bildoptimierung für WordPress ohne externe APIs. Generiert WebP und AVIF, verwaltet Backups und bietet Vorher-Nachher-Statistiken.
  * Version:           1.3.5
  * Requires at least: 6.0
@@ -13,7 +13,7 @@
  * Text Domain:       ha-image-optimizer
  * Domain Path:       /languages
  *
- * GitHub Plugin URI: mystryx1337/ha-image-optimizer
+ * GitHub Plugin URI: alexhaio/ha-image-optimizer
  * Primary Branch:    main
  *
  * @package           HA_Image_Optimizer
@@ -55,7 +55,7 @@ function ha_io_get_updater() {
 	require_once $puc_file;
 
 	$update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-		'https://github.com/mystryx1337/ha-image-optimizer/',
+		'https://github.com/alexhaio/ha-image-optimizer/',
 		__FILE__,
 		'ha-image-optimizer'
 	);
