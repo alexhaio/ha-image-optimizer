@@ -594,7 +594,17 @@ namespace {
 			if ( str_contains( $query, 'p.post_content LIKE' ) ) {
 				if ( str_contains( $query, 'landscape-photo' ) || str_contains( $query, '300x200' ) || str_contains( $query, 'scaled' ) ) {
 					return [
-						(object) [ 'ID' => 70, 'post_title' => 'Beitrag mit skaliertem Bild', 'post_type' => 'post' ],
+						(object) [ 'ID' => 70, 'post_title' => 'Beitrag mit skaliertem Bild', 'post_type' => 'post', 'post_content' => 'Hier ist das Bild' ],
+					];
+				}
+				if ( str_contains( $query, '8639' ) || str_contains( $query, '8640' ) || str_contains( $query, '8661' ) ) {
+					return [
+						(object) [
+							'ID'           => 85,
+							'post_title'   => 'Urlaubsreise 2024',
+							'post_type'    => 'post',
+							'post_content' => '[gallery size="large" columns="2" ids="8639,8640,8641,8661"]',
+						],
 					];
 				}
 				return [];
@@ -1286,6 +1296,76 @@ namespace HA_Image_Optimizer_Tests {
 			@unlink( $tOrig );
 			@unlink( $tThumb );
 			@rmdir( $tempDir );
+
+			// 7. Test Gallery Shortcodes with comma-separated IDs (e.g. [gallery ids="8639,8640,8641,8661"])
+			$GLOBALS['wp_test_posts'][8639] = (object) [
+				'ID'             => 8639,
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image/jpeg',
+				'post_parent'    => 0,
+				'post_status'    => 'inherit',
+				'post_title'     => 'Gallery First Image 8639',
+				'post_date'      => '2020-01-01 12:00:00',
+				'post_date_gmt'  => '2020-01-01 12:00:00',
+			];
+			$GLOBALS['wp_test_posts'][8640] = (object) [
+				'ID'             => 8640,
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image/jpeg',
+				'post_parent'    => 0,
+				'post_status'    => 'inherit',
+				'post_title'     => 'Gallery Middle Image 8640',
+				'post_date'      => '2020-01-01 12:00:00',
+				'post_date_gmt'  => '2020-01-01 12:00:00',
+			];
+			$GLOBALS['wp_test_posts'][8661] = (object) [
+				'ID'             => 8661,
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image/jpeg',
+				'post_parent'    => 0,
+				'post_status'    => 'inherit',
+				'post_title'     => 'Gallery Last Image 8661',
+				'post_date'      => '2020-01-01 12:00:00',
+				'post_date_gmt'  => '2020-01-01 12:00:00',
+			];
+
+			// Test first image in gallery ids list (='8639, or ="8639,)
+			$auditGFirst = MediaAuditor::audit_attachment( 8639 );
+			$this->assert( MediaAuditor::STATUS_USED === $auditGFirst['status'], 'First image in [gallery ids="..."] list detected as used' );
+			$this->assert( ! empty( $auditGFirst['references'] ), 'First gallery image has references' );
+			$this->assert( str_contains( $auditGFirst['references'][0]['label'], 'Galerie' ), 'Reference identifies gallery usage' );
+
+			// Test middle image in gallery ids list (,8640,)
+			$auditGMiddle = MediaAuditor::audit_attachment( 8640 );
+			$this->assert( MediaAuditor::STATUS_USED === $auditGMiddle['status'], 'Middle image in [gallery ids="..."] list detected as used' );
+			$this->assert( ! empty( $auditGMiddle['references'] ), 'Middle gallery image has references' );
+			$this->assert( str_contains( $auditGMiddle['references'][0]['label'], 'Galerie' ), 'Middle gallery reference identifies gallery usage' );
+
+			// Test last image in gallery ids list (,8661")
+			$auditGLast = MediaAuditor::audit_attachment( 8661 );
+			$this->assert( MediaAuditor::STATUS_USED === $auditGLast['status'], 'Last image in [gallery ids="..."] list detected as used' );
+			$this->assert( ! empty( $auditGLast['references'] ), 'Last gallery image has references' );
+			$this->assert( str_contains( $auditGLast['references'][0]['label'], 'Galerie' ), 'Last gallery reference identifies gallery usage' );
+
+			// Test parent post with classic [gallery] without ids=
+			$GLOBALS['wp_test_posts'][50] = (object) [
+				'ID'             => 50,
+				'post_title'     => 'Parent Post With Auto Gallery',
+				'post_content'   => 'Hier ist Text. [gallery size="medium"] und noch mehr Text.',
+			];
+			$GLOBALS['wp_test_posts'][501] = (object) [
+				'ID'             => 501,
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image/jpeg',
+				'post_parent'    => 50,
+				'post_status'    => 'inherit',
+				'post_title'     => 'Auto Attached Image 501',
+				'post_date'      => '2020-01-01 12:00:00',
+				'post_date_gmt'  => '2020-01-01 12:00:00',
+			];
+			$auditAutoGallery = MediaAuditor::audit_attachment( 501 );
+			$this->assert( MediaAuditor::STATUS_USED === $auditAutoGallery['status'], 'Attached image in parent post with [gallery] auto-gallery detected as used' );
+			$this->assert( str_contains( $auditAutoGallery['references'][0]['label'], 'Automatische Galerie' ), 'Reference identifies automatic parent post gallery' );
 
 			MediaAuditor::clear_results();
 		}

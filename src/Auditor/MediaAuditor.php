@@ -204,6 +204,15 @@ class MediaAuditor {
 			'"id":' . $id_str,
 			'"imageId":' . $id_str,
 			'"image_id":' . $id_str,
+			'"mediaId":' . $id_str,
+			',' . $id_str . ',',
+			', ' . $id_str . ',',
+			'[' . $id_str . ',',
+			',' . $id_str . ']',
+			'="' . $id_str . ',',
+			'=\'' . $id_str . ',',
+			',' . $id_str . '"',
+			',' . $id_str . '\'',
 		];
 
 		$rel_files = is_array( $rel_file ) ? $rel_file : ( ! empty( $rel_file ) ? [ $rel_file ] : [] );
@@ -512,6 +521,25 @@ class MediaAuditor {
 		$disk_bytes = self::calculate_disk_bytes( $attachment_id, $file );
 		$references = [];
 
+		// WordPress classic automatic gallery: [gallery] or [gallery ... without ids=] displays all attached media
+		if ( $parent_id > 0 && ! empty( $parent_post->post_content ) ) {
+			if ( preg_match( '/\[gallery(?![^\]]*ids=)[^\]]*\]/i', (string) $parent_post->post_content ) ) {
+				$references[] = [
+					'label' => sprintf(
+						/* translators: 1: post title, 2: post ID */
+						__( 'Automatische Galerie in übergeordnetem Beitrag "%1$s" (#%2$d)', 'ha-image-optimizer' ),
+						$parent_title ?: ( 'ID ' . $parent_id ),
+						$parent_id
+					),
+					'url'   => self::safe_admin_url( 'post.php?post=' . $parent_id . '&action=edit' ),
+				];
+
+				if ( $early_exit ) {
+					return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+				}
+			}
+		}
+
 		$upload_dir = wp_upload_dir();
 		$rel_file   = '';
 		if ( $file && ! empty( $upload_dir['basedir'] ) ) {
@@ -743,14 +771,67 @@ class MediaAuditor {
 		}
 
 		// -------------------------------------------------------------
-		// 5. Content References (Gutenberg blocks, HTML <img>, URLs, Shortcodes)
+		// 5. Content References (Gutenberg blocks, HTML <img>, Galleries, Shortcodes)
 		// -------------------------------------------------------------
+		$id_str = (string) $attachment_id;
+
 		$content_patterns = [
-			'wp-image-' . $attachment_id,
-			'"id":' . $attachment_id,
-			'"id": ' . $attachment_id,
-			'image="' . $attachment_id . '"',
-			'images="' . $attachment_id . '"',
+			// Standard HTML <img> tags & classes
+			'wp-image-' . $id_str,
+			'attachment_' . $id_str,
+
+			// Gutenberg JSON block attributes
+			'"id":' . $id_str,
+			'"id": ' . $id_str,
+			'"id":"' . $id_str . '"',
+			'"mediaId":' . $id_str,
+			'"mediaId": ' . $id_str,
+			'"imageId":' . $id_str,
+			'"imageId": ' . $id_str,
+			'"image_id":' . $id_str,
+			'"image_id": ' . $id_str,
+
+			// Gutenberg JSON arrays (e.g. "ids":[8639,8640] or "mediaIds":[8639])
+			'[' . $id_str . ',',
+			'[' . $id_str . ']',
+			'[' . $id_str . ' ',
+			'[ ' . $id_str . ',',
+			'[ ' . $id_str . ']',
+			',' . $id_str . ']',
+			', ' . $id_str . ']',
+			',' . $id_str . ' ]',
+
+			// Shortcodes with single ID attribute
+			'image="' . $id_str . '"',
+			'images="' . $id_str . '"',
+			'ids="' . $id_str . '"',
+			'ids=\'' . $id_str . '\'',
+			'include="' . $id_str . '"',
+			'include=\'' . $id_str . '\'',
+			'bg="' . $id_str . '"',
+			'bg=\'' . $id_str . '\'',
+
+			// Comma-separated ID lists in shortcodes & HTML attributes (e.g. [gallery ids="8639,8640,8641"])
+			// 1. Start of attribute list
+			'="' . $id_str . ',',
+			'=\'' . $id_str . ',',
+			'="' . $id_str . ' ,',
+			'=\'' . $id_str . ' ,',
+			// 2. Middle of list
+			',' . $id_str . ',',
+			', ' . $id_str . ',',
+			',' . $id_str . ' ,',
+			', ' . $id_str . ' ,',
+			// 3. End of attribute list
+			',' . $id_str . '"',
+			',' . $id_str . '\'',
+			', ' . $id_str . '"',
+			', ' . $id_str . '\'',
+			',' . $id_str . ' "',
+			',' . $id_str . ' \'',
+
+			// Attachment page links / query args
+			'attachment_id=' . $id_str,
 		];
 
 		foreach ( $search_variants['rel_files'] as $rf ) {
@@ -775,7 +856,7 @@ class MediaAuditor {
 
 		$where_content = implode( ' OR ', $like_clauses );
 		$content_sql   = $wpdb->prepare(
-			"SELECT p.ID, p.post_title, p.post_type FROM {$wpdb->posts} p
+			"SELECT p.ID, p.post_title, p.post_type, p.post_content FROM {$wpdb->posts} p
 			WHERE p.post_type NOT IN ('attachment', 'revision')
 			AND p.post_status != 'trash'
 			AND ({$where_content})
@@ -795,14 +876,32 @@ class MediaAuditor {
 					$type_label = 'Theme-Template (FSE)';
 				}
 
-				$references[] = [
-					'label' => sprintf(
+				$content_str = (string) ( $cp->post_content ?? '' );
+				$is_gallery  = str_contains( $content_str, '[gallery' )
+					|| str_contains( $content_str, 'wp:gallery' )
+					|| str_contains( $content_str, 'gallery_ids' )
+					|| str_contains( $content_str, 'vc_gallery' )
+					|| str_contains( $content_str, 'fusion_gallery' )
+					|| str_contains( $content_str, 'ux_gallery' );
+
+				$label = $is_gallery
+					? sprintf(
+						/* translators: 1: post title, 2: post ID, 3: post type */
+						__( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
+						$title,
+						$post_id,
+						$type_label
+					)
+					: sprintf(
 						/* translators: 1: post title, 2: post ID, 3: post type */
 						__( 'Eingebunden im Inhalt von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
 						$title,
 						$post_id,
 						$type_label
-					),
+					);
+
+				$references[] = [
+					'label' => $label,
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
 			}
@@ -833,6 +932,22 @@ class MediaAuditor {
 				'%"id": ' . $attachment_id . '%',
 				'%"id":"' . $attachment_id . '"%',
 			];
+
+			// Comma-separated or JSON arrays in builder data
+			$builder_list_patterns = [
+				'[' . $id_str . ',',
+				'[' . $id_str . ']',
+				',' . $id_str . ']',
+				',' . $id_str . ',',
+				', ' . $id_str . ',',
+				'"mediaId":' . $id_str,
+				'"imageId":' . $id_str,
+				'"image_id":' . $id_str,
+			];
+			foreach ( $builder_list_patterns as $blp ) {
+				$builder_like_clauses[] = 'pm.meta_value LIKE %s';
+				$builder_like_params[]  = '%' . $wpdb->esc_like( $blp ) . '%';
+			}
 
 			foreach ( $search_variants['rel_files'] as $rf ) {
 				if ( ! empty( $rf ) ) {
@@ -897,7 +1012,7 @@ class MediaAuditor {
 		}
 
 		// -------------------------------------------------------------
-		// 7. Custom Postmeta & ACF (Advanced Custom Fields)
+		// 7. Custom Postmeta & ACF (Advanced Custom Fields, Theme Galleries)
 		// -------------------------------------------------------------
 		$acf_sql = $wpdb->prepare(
 			"SELECT p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
@@ -907,12 +1022,20 @@ class MediaAuditor {
 			AND (
 				pm.meta_value = %s
 				OR pm.meta_value LIKE %s
+				OR pm.meta_value LIKE %s
+				OR pm.meta_value LIKE %s
+				OR pm.meta_value LIKE %s
+				OR pm.meta_value LIKE %s
 			)
 			AND p.post_type NOT IN ('attachment', 'revision')
 			AND p.post_status != 'trash'
 			LIMIT 3",
-			(string) $attachment_id,
-			'%i:' . $attachment_id . ';%'
+			$id_str,
+			'%i:' . $attachment_id . ';%',
+			$id_str . ',%',
+			'%,' . $id_str,
+			'%,' . $id_str . ',%',
+			'%, ' . $id_str . ',%'
 		);
 		$acf_posts = $wpdb->get_results( $acf_sql );
 
@@ -945,11 +1068,17 @@ class MediaAuditor {
 			'pm.meta_value LIKE %s',
 			'pm.meta_value LIKE %s',
 			'pm.meta_value LIKE %s',
+			'pm.meta_value LIKE %s',
+			'pm.meta_value LIKE %s',
+			'pm.meta_value LIKE %s',
 		];
 		$pm_params  = [
 			'%i:' . $attachment_id . ';%',
 			'%"id":' . $attachment_id . '%',
 			'%"imageId":' . $attachment_id . '%',
+			'%"mediaId":' . $attachment_id . '%',
+			'%,' . $attachment_id . ',%',
+			'%[' . $attachment_id . ',%',
 		];
 
 		foreach ( $search_variants['rel_files'] as $rf ) {
