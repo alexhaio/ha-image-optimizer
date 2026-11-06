@@ -409,13 +409,17 @@ class BackgroundAuditor {
 	 * @return bool True if dispatch request was initiated.
 	 */
 	public static function dispatch_async(): bool {
+		if ( ! function_exists( 'wp_remote_post' ) ) {
+			return false;
+		}
+
 		$ajax_url = admin_url( 'admin-ajax.php' );
-		$token    = wp_create_nonce( 'ha_io_bg_audit_worker_nonce' );
+		$token    = function_exists( 'wp_create_nonce' ) ? wp_create_nonce( 'ha_io_bg_audit_worker_nonce' ) : '';
 
 		$args = [
 			'timeout'   => 0.01,
 			'blocking'  => false,
-			'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
+			'sslverify' => function_exists( 'apply_filters' ) ? apply_filters( 'https_local_ssl_verify', false ) : false,
 			'body'      => [
 				'action' => self::ACTION_WORKER,
 				'token'  => $token,
@@ -468,8 +472,10 @@ class BackgroundAuditor {
 	 * @return void
 	 */
 	public static function schedule_cron(): void {
-		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			wp_schedule_event( time() + 60, 'ha_io_five_minutes', self::CRON_HOOK );
+		if ( function_exists( 'wp_next_scheduled' ) && ! wp_next_scheduled( self::CRON_HOOK ) ) {
+			if ( function_exists( 'wp_schedule_event' ) ) {
+				wp_schedule_event( time() + 60, 'ha_io_five_minutes', self::CRON_HOOK );
+			}
 		}
 	}
 
@@ -479,9 +485,11 @@ class BackgroundAuditor {
 	 * @return void
 	 */
 	public static function clear_cron(): void {
-		$timestamp = wp_next_scheduled( self::CRON_HOOK );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+		if ( function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_unschedule_event' ) ) {
+			$timestamp = wp_next_scheduled( self::CRON_HOOK );
+			if ( $timestamp ) {
+				wp_unschedule_event( $timestamp, self::CRON_HOOK );
+			}
 		}
 	}
 }

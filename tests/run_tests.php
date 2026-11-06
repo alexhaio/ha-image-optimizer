@@ -269,6 +269,40 @@ namespace {
 		}
 	}
 
+	$GLOBALS['wp_test_crons'] = [];
+	if ( ! function_exists( 'wp_next_scheduled' ) ) {
+		function wp_next_scheduled( $hook, $args = [] ) {
+			return $GLOBALS['wp_test_crons'][ $hook ] ?? false;
+		}
+	}
+	if ( ! function_exists( 'wp_schedule_event' ) ) {
+		function wp_schedule_event( $timestamp, $recurrence, $hook, $args = [] ): bool {
+			$GLOBALS['wp_test_crons'][ $hook ] = $timestamp;
+			return true;
+		}
+	}
+	if ( ! function_exists( 'wp_unschedule_event' ) ) {
+		function wp_unschedule_event( $timestamp, $hook, $args = [] ): bool {
+			unset( $GLOBALS['wp_test_crons'][ $hook ] );
+			return true;
+		}
+	}
+	if ( ! function_exists( 'wp_remote_post' ) ) {
+		function wp_remote_post( $url, $args = [] ) {
+			return [ 'response' => [ 'code' => 200 ] ];
+		}
+	}
+	if ( ! function_exists( 'wp_create_nonce' ) ) {
+		function wp_create_nonce( $action = -1 ): string {
+			return 'test_nonce_' . $action;
+		}
+	}
+	if ( ! function_exists( 'wp_verify_nonce' ) ) {
+		function wp_verify_nonce( $nonce, $action = -1 ): bool {
+			return true;
+		}
+	}
+
 	if ( ! defined( 'MINUTE_IN_SECONDS' ) ) {
 		define( 'MINUTE_IN_SECONDS', 60 );
 	}
