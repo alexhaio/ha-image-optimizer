@@ -5,7 +5,7 @@ Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.3.4
+Stable tag: 1.3.5
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,13 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 1.3.5 =
+* Neu: Erkennung von Galerie-Shortcodes & ID-Listen: Der Medien-Auditor erkennt nun zuverlässig Bilder, die als kommaseparierte IDs in Galerie-Shortcodes ([gallery ids="..."], include, images, gallery_ids) eingebunden sind.
+* Neu: Erkennung von Gutenberg JSON-Array-Referenzen: Unterstützung für wp:gallery {"ids":[...]} und Block-Array-Attribute.
+* Neu: Erkennung von ID-Listen in Page-Buildern und Custom Postmeta / ACF-Feldern.
+* Neu: Automatische Galerie-Erkennung bei parameterlosem [gallery] in übergeordneten Beiträgen.
+* Optimierung: Transparente Referenzkennzeichnung "Eingebunden im Inhalt (Galerie)" im Auditor.
 
 = 1.3.4 =
 * Neu: Umfassende Erkennung von WordPress 5.3+ Skalierungen (-scaled) und Zwischengrößen (Sub-Sizes): Der Medien-Auditor erkennt nun zuverlässig Bilder, die als verkleinerte Thumbnail-Größe (z. B. 1024x768, 300x200), unskaliertes Original oder -scaled-Variante in Beiträgen, Page-Buildern, Slitern und Tabellen eingebunden sind.
