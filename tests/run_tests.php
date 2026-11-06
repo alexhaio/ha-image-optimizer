@@ -1081,6 +1081,7 @@ namespace HA_Image_Optimizer_Tests {
 
 			// Test Universal Database Scanner (attachment 20 found in custom table wp_wpforms_entries)
 			$auditGeneric = MediaAuditor::audit_attachment( 20 );
+			echo "\n=== DEBUG 20 REFS === " . json_encode( $auditGeneric['references'] ) . "\n";
 			$this->assert( MediaAuditor::STATUS_USED === $auditGeneric['status'], 'Detected used attachment in generic third-party table' );
 			$hasGenericTable = false;
 			foreach ( $auditGeneric['references'] as $ref ) {
@@ -1109,6 +1110,7 @@ namespace HA_Image_Optimizer_Tests {
 			// Test Safety Buffer: recently uploaded image (2 days old) protected from deletion
 			// Verify that an old unattached file with 0 references is correctly classified as orphan
 			$auditOrphan = MediaAuditor::audit_attachment( 11 );
+			echo "\n=== DEBUG 11 REFS === " . json_encode( $auditOrphan['references'] ) . "\n";
 			$this->assert( MediaAuditor::STATUS_UNATTACHED_UNUSED === $auditOrphan['status'], 'Unused attachment is classified as unattached_unused' );
 			$this->assert( empty( $auditOrphan['references'] ), 'Orphan attachment has no false references' );
 
@@ -1128,6 +1130,7 @@ namespace HA_Image_Optimizer_Tests {
 				'post_date_gmt'  => date( 'Y-m-d H:i:s', time() - 86400 * 2 ),
 			];
 			$auditRecent = MediaAuditor::audit_attachment( 99 );
+			echo "\n=== DEBUG 99 REFS === " . json_encode( $auditRecent['references'] ) . "\n";
 			$this->assert( MediaAuditor::STATUS_USED === $auditRecent['status'], 'Safety buffer marks recently uploaded media as protected (used)' );
 			$this->assert( ! empty( $auditRecent['references'] ), 'Recent upload has safety buffer reference' );
 			$hasSafetyRef = false;
