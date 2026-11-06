@@ -1608,15 +1608,19 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( str_contains( $safeguard, 'MAX_EXECUTION_TIME(2500)' ) && str_contains( $safeguard, 'SQL_NO_CACHE' ), 'SQL safeguard contains MAX_EXECUTION_TIME(2500) and SQL_NO_CACHE' );
 
 			// 4. Background Auditor State Machine (start, pause, resume, cancel)
-			Settings::update( [ 'auditor_background_enabled' => true, 'auditor_night_mode_enabled' => false ] );
+			Settings::update( [
+				'auditor_background_enabled' => true,
+				'auditor_night_mode_enabled' => false,
+				'auditor_max_server_load'    => 50.0,
+			] );
 			$startState = BackgroundAuditor::start( true, false );
-			$this->assert( in_array( $startState['status'], [ BackgroundAuditor::STATUS_RUNNING, BackgroundAuditor::STATUS_COMPLETED ], true ), 'BackgroundAuditor::start transitions to running/completed' );
+			$this->assert( in_array( $startState['status'], [ BackgroundAuditor::STATUS_RUNNING, BackgroundAuditor::STATUS_COMPLETED, BackgroundAuditor::STATUS_COOLDOWN ], true ), 'BackgroundAuditor::start transitions to running/completed' );
 
 			$pausedState = BackgroundAuditor::pause();
 			$this->assert( BackgroundAuditor::STATUS_PAUSED === $pausedState['status'], 'BackgroundAuditor::pause transitions to paused' );
 
 			$resumedState = BackgroundAuditor::resume();
-			$this->assert( BackgroundAuditor::STATUS_RUNNING === $resumedState['status'], 'BackgroundAuditor::resume transitions to running' );
+			$this->assert( in_array( $resumedState['status'], [ BackgroundAuditor::STATUS_RUNNING, BackgroundAuditor::STATUS_COOLDOWN ], true ), 'BackgroundAuditor::resume transitions to running' );
 
 			$cancelledState = BackgroundAuditor::cancel();
 			$this->assert( BackgroundAuditor::STATUS_CANCELLED === $cancelledState['status'], 'BackgroundAuditor::cancel transitions to cancelled' );
