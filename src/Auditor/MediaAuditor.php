@@ -1505,6 +1505,49 @@ class MediaAuditor {
 		}
 
 		// -------------------------------------------------------------
+		// 8b. User Profile Photos & Avatars (wp_usermeta)
+		// -------------------------------------------------------------
+		if ( ! empty( $wpdb->usermeta ) && ! empty( $wpdb->users ) ) {
+			$user_meta_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT {$safeguard}um.user_id, um.meta_key, u.display_name
+					FROM {$wpdb->usermeta} um
+					INNER JOIN {$wpdb->users} u ON (um.user_id = u.ID)
+					WHERE (
+						um.meta_value = %s
+						OR um.meta_value LIKE %s
+						OR um.meta_value LIKE %s
+					)
+					AND um.meta_key NOT LIKE 'ha_io_%'
+					LIMIT 3",
+					(string) $attachment_id,
+					'%"' . $attachment_id . '"%',
+					'%' . $wpdb->esc_like( $filename ) . '%'
+				)
+			);
+
+			if ( ! empty( $user_meta_rows ) ) {
+				foreach ( $user_meta_rows as $ur ) {
+					$name = ! empty( $ur->display_name ) ? $ur->display_name : ( 'User #' . $ur->user_id );
+					$references[] = [
+						'label' => sprintf(
+							/* translators: 1: meta key, 2: display name, 3: user ID */
+							__( 'Benutzerprofil/Avatar ("%1$s") von %2$s (#%3$d)', 'ha-image-optimizer' ),
+							$ur->meta_key,
+							$name,
+							(int) $ur->user_id
+						),
+						'url'   => self::safe_admin_url( 'user-edit.php?user_id=' . (int) $ur->user_id ),
+					];
+				}
+
+				if ( $early_exit ) {
+					return self::build_audit_result( $attachment_id, $file, $filename, $parent_id, $parent_title, $thumb_url, $disk_bytes, $references, $post );
+				}
+			}
+		}
+
+		// -------------------------------------------------------------
 		// 9. Active Theme Files Scan (style.css, templates, theme.json)
 		// -------------------------------------------------------------
 		$theme_file = self::search_active_theme_files( $search_variants['safe_filenames'], $search_variants['rel_files'] );

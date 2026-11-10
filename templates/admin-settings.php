@@ -75,8 +75,12 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 
 			<div class="ha-io-diag-item">
 				<span class="ha-io-diag-label"><?php esc_html_e( 'Aktiver Treiber:', 'ha-image-optimizer' ); ?></span>
-				<span class="ha-io-diag-val ha-io-status-green">
-					<?php echo esc_html( strtoupper( $caps['best_driver'] ) ); ?> ✅
+				<span class="ha-io-diag-val <?php echo 'none' !== $caps['best_driver'] ? 'ha-io-status-green' : 'ha-io-status-red'; ?>">
+					<?php if ( 'none' !== $caps['best_driver'] ) : ?>
+						<?php echo esc_html( strtoupper( $caps['best_driver'] ) ); ?> ✅
+					<?php else : ?>
+						<?php esc_html_e( 'Kein Grafiktreiber verfügbar (GD / Imagick fehlt)', 'ha-image-optimizer' ); ?> ❌
+					<?php endif; ?>
 				</span>
 			</div>
 
@@ -250,6 +254,19 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 				</tr>
 
 				<tr>
+					<th scope="row"><?php esc_html_e( 'PNG-zu-JPEG Konvertierung', 'ha-image-optimizer' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="ha_io_settings[convert_non_transparent_png]" value="1" <?php checked( $settings['convert_non_transparent_png'] ); ?>>
+							<strong><?php esc_html_e( 'Nicht-transparente PNGs automatisch in JPEG umwandeln', 'ha-image-optimizer' ); ?></strong>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Prüft PNG-Bilder auf echte Transparenz. Wenn keine transparenten Pixel vorhanden sind und die resultierende JPEG-Datei kleiner ist, wird das Bild konvertiert.', 'ha-image-optimizer' ); ?>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
 					<th scope="row"><?php esc_html_e( 'Backup & Metadaten', 'ha-image-optimizer' ); ?></th>
 					<td>
 						<fieldset>
@@ -342,6 +359,7 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 					<th scope="row"><?php esc_html_e( 'Nacht-Modus (Off-Peak Zeitfenster)', 'ha-image-optimizer' ); ?></th>
 					<td>
 						<label style="display: block; margin-bottom: 8px;">
+							<input type="hidden" name="ha_io_settings[auditor_night_mode_enabled]" value="0">
 							<input type="checkbox" name="ha_io_settings[auditor_night_mode_enabled]" id="ha-io-auditor-night-enabled" value="1" <?php checked( $settings['auditor_night_mode_enabled'] ?? true ); ?>>
 							<strong><?php esc_html_e( 'Hintergrund-Scan nur nachts ausführen (Automatisch aktiv bei Hintergrund-Tasks)', 'ha-image-optimizer' ); ?></strong>
 						</label>

@@ -561,6 +561,8 @@ namespace {
 		public string $terms         = 'wp_terms';
 		public string $term_taxonomy = 'wp_term_taxonomy';
 		public string $options       = 'wp_options';
+		public string $users         = 'wp_users';
+		public string $usermeta      = 'wp_usermeta';
 
 		public function get_var( $query ) {
 			if ( is_string( $query ) && str_contains( $query, 'SHOW TABLES LIKE' ) ) {
@@ -751,6 +753,11 @@ namespace HA_Image_Optimizer_Tests {
 	use ha\ImageOptimizer\Bulk\ProgressTracker;
 	use ha\ImageOptimizer\Auditor\MediaAuditor;
 	use ha\ImageOptimizer\Auditor\BackgroundAuditor;
+	use ha\ImageOptimizer\Engine\OptimizerFactory;
+	use ha\ImageOptimizer\Engine\OptimizerInterface;
+	use ha\ImageOptimizer\Engine\OptimizationResult;
+	use ha\ImageOptimizer\Media\PngInspector;
+	use ha\ImageOptimizer\Delivery\CachePurger;
 
 	class TestRunner {
 
@@ -921,6 +928,16 @@ namespace HA_Image_Optimizer_Tests {
 			$formattedMb = SizeGuard::format_size( 2500000, 1 ); // ~2.4 MB
 			$this->assert( str_contains( $formattedMb, 'MB' ) && ( str_contains( $formattedMb, '.' ) || str_contains( $formattedMb, ',' ) ), 'format_size(2500000) includes decimal point/comma' );
 
+			// Test PngInspector safety
+			$this->assert( false === PngInspector::has_transparency( '/non/existent/file.png' ), 'PngInspector safely handles missing file' );
+
+			// Test CachePurger suspend and resume
+			$this->assert( false === CachePurger::is_suspended(), 'CachePurger is initially not suspended' );
+			CachePurger::suspend();
+			$this->assert( true === CachePurger::is_suspended(), 'CachePurger is suspended after suspend()' );
+			CachePurger::resume();
+			$this->assert( false === CachePurger::is_suspended(), 'CachePurger resumes after resume()' );
+
 			@unlink( $tmpFile );
 		}
 
@@ -1012,6 +1029,11 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( str_contains( $filtered, '<picture' ), '<img> tag converted into <picture> element' );
 			$this->assert( str_contains( $filtered, '<source type="image/webp"' ), '<picture> includes WebP <source> tag' );
 			$this->assert( str_contains( $filtered, '<img src="https://example.com/wp-content/uploads/mock.jpg"' ), 'Preserved original <img> as fallback' );
+
+			// Test that existing <picture> tags are not nested
+			$alreadyPicture = '<picture><source srcset="existing.webp"><img src="https://example.com/wp-content/uploads/mock.jpg"></picture>';
+			$filteredPic = ContentFilter::filter_html( $alreadyPicture );
+			$this->assert( 1 === substr_count( $filteredPic, '<picture>' ) || 1 === substr_count( $filteredPic, '<picture' ), 'ContentFilter does not nest <picture> tags if <img> already wrapped' );
 
 			@unlink( $mockFile );
 			@unlink( $mockWebp );
@@ -1505,6 +1527,35 @@ namespace HA_Image_Optimizer_Tests {
 				'post_date_gmt'  => '2026-10-25 00:00:00',
 			];
 
+			// Inject mock driver for CLI environment testing
+			OptimizerFactory::set_driver(
+				new class implements OptimizerInterface {
+					public function is_available(): bool {
+						return true;
+					}
+					public function get_name(): string {
+						return 'MockEngine';
+					}
+					public function optimize( string $file_path, CompressionLevel $level, bool $keep_exif = false ): OptimizationResult {
+						$size = file_exists( $file_path ) ? (int) filesize( $file_path ) : 100;
+						return new OptimizationResult(
+							success: true,
+							file_path: $file_path,
+							original_size: $size,
+							optimized_size: $size,
+							saved_bytes: 0,
+							saved_percent: 0.0
+						);
+					}
+					public function generate_webp( string $source_path, string $target_path, int $quality ): bool {
+						return false;
+					}
+					public function generate_avif( string $source_path, string $target_path, int $quality ): bool {
+						return false;
+					}
+				}
+			);
+
 			// Process with custom level 'ultra' (Hoch)
 			AttachmentProcessor::process( $testAttachmentId, [], true, 'ultra' );
 			$savedLevel = get_post_meta( $testAttachmentId, '_ha_io_custom_level', true );
@@ -1544,6 +1595,7 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( empty( get_post_meta( $testAttachmentId, '_ha_io_data', true ) ), 'BackupManager::restore cleared _ha_io_data postmeta' );
 
 			// Cleanup
+			OptimizerFactory::reset();
 			@unlink( $dummyImage );
 			@unlink( $backupPath );
 			@rmdir( $uploadsDir );

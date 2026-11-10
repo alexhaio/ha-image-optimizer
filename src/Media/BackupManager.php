@@ -91,10 +91,11 @@ class BackupManager {
 	 */
 	public static function get_backup_file_path( int $attachment_id, string $source_path ): string {
 		$upload_dir = wp_upload_dir();
-		$basedir    = trailingslashit( $upload_dir['basedir'] );
+		$basedir    = function_exists( 'wp_normalize_path' ) ? wp_normalize_path( trailingslashit( $upload_dir['basedir'] ) ) : trailingslashit( $upload_dir['basedir'] );
+		$normalized_source = function_exists( 'wp_normalize_path' ) ? wp_normalize_path( $source_path ) : $source_path;
 
 		// Determine relative path inside uploads/ (e.g. 2026/10/foto.jpg)
-		$relative = str_replace( $basedir, '', $source_path );
+		$relative = str_replace( $basedir, '', $normalized_source );
 		$relative = ltrim( $relative, '/\\' );
 
 		return trailingslashit( self::get_backup_dir() ) . $relative;
@@ -142,8 +143,13 @@ class BackupManager {
 		self::clean_nextgen_files( $attachment_id );
 
 		// 3. Regenerate thumbnails from restored master
-		$metadata = wp_generate_attachment_metadata( $attachment_id, $file );
-		wp_update_attachment_metadata( $attachment_id, $metadata );
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/image.php' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+		if ( function_exists( 'wp_generate_attachment_metadata' ) ) {
+			$metadata = wp_generate_attachment_metadata( $attachment_id, $file );
+			wp_update_attachment_metadata( $attachment_id, $metadata );
+		}
 
 		// 4. Clear optimization metadata
 		delete_post_meta( $attachment_id, '_ha_io_data' );

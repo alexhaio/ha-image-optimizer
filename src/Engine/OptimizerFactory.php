@@ -54,6 +54,16 @@ class OptimizerFactory {
 	}
 
 	/**
+	 * Explicitly set driver instance (for unit testing or custom injection).
+	 *
+	 * @param OptimizerInterface|null $driver Driver instance.
+	 * @return void
+	 */
+	public static function set_driver( ?OptimizerInterface $driver ): void {
+		self::$instance = $driver;
+	}
+
+	/**
 	 * Reset cached driver instance (for unit testing or switching).
 	 *
 	 * @return void

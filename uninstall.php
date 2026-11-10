@@ -25,12 +25,17 @@ if ( ! $delete_data ) {
 // -----------------------------------------------------------------------------
 global $wpdb;
 
-// a) Löschen aller gespeicherten Attachment-Metadaten (_ha_io_data)
+// a) Löschen aller gespeicherten Attachment-Metadaten (_ha_io_data & _ha_io_custom_level)
 delete_metadata( 'post', 0, '_ha_io_data', '', true );
+delete_metadata( 'post', 0, '_ha_io_custom_level', '', true );
 
 // b) Optionen und Transients bereinigen
 delete_option( 'ha_io_settings' );
 delete_option( 'ha_io_delete_data_on_uninstall' );
+delete_option( 'ha_io_custom_data' );
+delete_option( 'ha_io_audit_results' );
+delete_option( 'ha_io_audit_background_state' );
+delete_option( 'ha_io_audit_reverse_index' );
 $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_ha_io_%' OR option_name LIKE '_transient_timeout_ha_io_%'" );
 
 // c) Bereinigung des Backup-Verzeichnisses (wp-content/uploads/ha-backups/)

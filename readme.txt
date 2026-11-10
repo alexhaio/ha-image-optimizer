@@ -5,7 +5,7 @@ Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,18 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 2.0.1 =
+* Fix: Behebung eines Fatal Errors in `CustomFolderProcessor` durch Aufruf von `maybe_downscale()`.
+* Fix: Behebung des HTTP 403 Fehlers bei Hintergrund-Tasks durch Single-Use Transient-Tokens für unauthentifizierte Loopback-Requests.
+* Fix: Korrektur der Checkbox-Speicherung für den Nachtmodus im Einstellungsformular.
+* Neu: Option zur automatischen PNG-zu-JPEG Konvertierung für nicht-transparente PNG-Bilder (inkl. Alpha-Kanal-Inspektion via PngInspector).
+* Fix: Native WebP- und AVIF-Optimierung im GD-Treiber ergänzt.
+* Fix: Korrektur der Frame-Erhaltung und Vermeidung von Instanzzerstörung bei animierten GIFs im Imagick-Treiber (`writeImages`).
+* Fix: Vermeidung von verschachtelten `<picture>`-Tags im ContentFilter via PCRE Skip/Fail.
+* Performance: Drosselung von Cache-Leerungen (CachePurger) während Massenläufen auf genau eine Leerung am Ende des Batches.
+* Fix: Medien-Auditor prüft nun auch `wp_usermeta` für Benutzerprofile und Avatar-Plugins zur Vermeidung von False-Positives.
+* UI & Stabilität: Rote Warnung bei fehlendem Grafiktreiber (`none`) im Dashboard, Synchronisation der Bild-Dimensionen nach Downscaling und sauberes Deinstallations-Cleanup.
 
 = 2.0.0 =
 * Major Feature: Asynchroner Hintergrund-Auditor: Verwaiste Medien können nun vollautomatisch und non-blocking im Hintergrund gescannt werden - der Browser-Tab muss nicht geöffnet bleiben.

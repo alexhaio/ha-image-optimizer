@@ -414,7 +414,10 @@ class BackgroundAuditor {
 		}
 
 		$ajax_url = admin_url( 'admin-ajax.php' );
-		$token    = function_exists( 'wp_create_nonce' ) ? wp_create_nonce( 'ha_io_bg_audit_worker_nonce' ) : '';
+		$token    = function_exists( 'wp_generate_password' ) ? wp_generate_password( 32, false ) : bin2hex( random_bytes( 16 ) );
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( 'ha_io_bg_token_' . $token, 1, 60 );
+		}
 
 		$args = [
 			'timeout'   => 0.01,
@@ -437,8 +440,21 @@ class BackgroundAuditor {
 	 */
 	public static function handle_async_worker(): void {
 		$token = isset( $_POST['token'] ) ? sanitize_text_field( (string) $_POST['token'] ) : '';
-		if ( ! wp_verify_nonce( $token, 'ha_io_bg_audit_worker_nonce' ) ) {
-			status_header( 403 );
+
+		$valid = false;
+		if ( ! empty( $token ) && function_exists( 'get_transient' ) && get_transient( 'ha_io_bg_token_' . $token ) ) {
+			$valid = true;
+			if ( function_exists( 'delete_transient' ) ) {
+				delete_transient( 'ha_io_bg_token_' . $token );
+			}
+		} elseif ( ! empty( $token ) && function_exists( 'wp_verify_nonce' ) && wp_verify_nonce( $token, 'ha_io_bg_audit_worker_nonce' ) ) {
+			$valid = true;
+		}
+
+		if ( ! $valid ) {
+			if ( function_exists( 'status_header' ) ) {
+				status_header( 403 );
+			}
 			exit;
 		}
 

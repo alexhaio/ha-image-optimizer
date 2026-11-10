@@ -86,6 +86,16 @@ class GdDriver implements OptimizerInterface {
 				$saved = imagepng( $image, $temp_file, 9 );
 			} elseif ( 'image/gif' === $mime ) {
 				$saved = imagegif( $image, $temp_file );
+			} elseif ( 'image/webp' === $mime && function_exists( 'imagewebp' ) ) {
+				imagealphablending( $image, false );
+				imagesavealpha( $image, true );
+				$quality = ( CompressionLevel::LOSSLESS === $level ) ? 95 : $level->quality( 'image/webp' );
+				$saved   = imagewebp( $image, $temp_file, $quality );
+			} elseif ( 'image/avif' === $mime && function_exists( 'imageavif' ) ) {
+				imagealphablending( $image, false );
+				imagesavealpha( $image, true );
+				$quality = ( CompressionLevel::LOSSLESS === $level ) ? 95 : $level->quality( 'image/avif' );
+				$saved   = imageavif( $image, $temp_file, $quality );
 			}
 
 			// Free memory

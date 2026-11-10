@@ -41,8 +41,12 @@ class ContentFilter {
 			return $content;
 		}
 
-		// 1. Process <img> tags
-		$content = (string) preg_replace_callback( '/<img\b([^>]*?)>/i', [ __CLASS__, 'replace_img_tag' ], $content );
+		// 1. Process <img> tags (skip <img> already wrapped inside a <picture> element)
+		$content = (string) preg_replace_callback(
+			'/<picture\b[^>]*>.*?<\/picture>(*SKIP)(*F)|<img\b([^>]*?)>/is',
+			[ __CLASS__, 'replace_img_tag' ],
+			$content
+		);
 
 		// 2. Process inline background-image styles
 		$content = (string) preg_replace_callback(
@@ -226,7 +230,16 @@ class ContentFilter {
 		if ( $has_webp ) {
 			$sets[] = "url('{$webp_url}') type('image/webp')";
 		}
-		$sets[] = "url('{$img_url}') type('image/jpeg')";
+		$path_part = (string) parse_url( $img_url, PHP_URL_PATH );
+		$ext       = strtolower( pathinfo( $path_part, PATHINFO_EXTENSION ) );
+		$orig_mime = match ( $ext ) {
+			'png'   => 'image/png',
+			'gif'   => 'image/gif',
+			'webp'  => 'image/webp',
+			'avif'  => 'image/avif',
+			default => 'image/jpeg',
+		};
+		$sets[]    = "url('{$img_url}') type('{$orig_mime}')";
 
 		$set_str = implode( ', ', $sets );
 

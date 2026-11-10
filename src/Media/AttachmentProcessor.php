@@ -108,13 +108,18 @@ class AttachmentProcessor {
 
 		// 3. Downscale if oversized
 		if ( ! empty( $settings['resize_large_images'] ) ) {
-			Resizer::maybe_downscale( $file, (int) $settings['max_width'], (int) $settings['max_height'] );
+			if ( Resizer::maybe_downscale( $file, (int) $settings['max_width'], (int) $settings['max_height'] ) ) {
+				$new_dims = function_exists( 'wp_getimagesize' ) ? wp_getimagesize( $file ) : ( function_exists( 'getimagesize' ) ? @getimagesize( $file ) : false );
+				if ( ! empty( $new_dims[0] ) && ! empty( $new_dims[1] ) ) {
+					$metadata['width']  = (int) $new_dims[0];
+					$metadata['height'] = (int) $new_dims[1];
+				}
+			}
 		}
 
-		try {
-			$optimizer = OptimizerFactory::create();
-		} catch ( \Throwable $e ) {
-			return $metadata;
+		// 3b. Optional PNG to JPEG conversion (for non-transparent PNGs if smaller)
+		if ( 'image/png' === $mime && ! empty( $settings['convert_non_transparent_png'] ) ) {
+			$file = self::maybe_convert_png_to_jpeg( $attachment_id, $file, $metadata, $mime );
 		}
 
 		// Resolve compression levels: Custom Level vs. Global Settings
@@ -148,6 +153,12 @@ class AttachmentProcessor {
 			$sizes_level_key = $settings['compression_sizes'] ?? 'smart';
 			$orig_level      = CompressionLevel::tryFrom( $orig_level_key ) ?? CompressionLevel::LOSSLESS;
 			$sizes_level     = CompressionLevel::tryFrom( $sizes_level_key ) ?? CompressionLevel::SMART;
+		}
+
+		try {
+			$optimizer = OptimizerFactory::create();
+		} catch ( \Throwable $e ) {
+			return $metadata;
 		}
 
 		$keep_exif = ! empty( $settings['keep_exif'] );
@@ -287,5 +298,89 @@ class AttachmentProcessor {
 		do_action( 'ha_io_attachment_optimized', $attachment_id, $stats );
 
 		return $metadata;
+	}
+
+	/**
+	 * Convert non-transparent PNG to JPEG if the resulting JPEG is smaller.
+	 *
+	 * @param int                  $attachment_id Attachment ID.
+	 * @param string               $file          Current absolute file path.
+	 * @param array<string, mixed> $metadata      Attachment metadata (updated by reference).
+	 * @param string               $mime          MIME type (updated by reference).
+	 * @return string Current (possibly new) file path.
+	 */
+	private static function maybe_convert_png_to_jpeg( int $attachment_id, string $file, array &$metadata, string &$mime ): string {
+		if ( PngInspector::has_transparency( $file ) ) {
+			return $file;
+		}
+
+		$jpg_file = preg_replace( '/\.png$/i', '.jpg', $file );
+		if ( ! $jpg_file || $jpg_file === $file ) {
+			$jpg_file = $file . '.jpg';
+		}
+
+		$converted = false;
+		if ( function_exists( 'wp_get_image_editor' ) ) {
+			$editor = wp_get_image_editor( $file );
+			if ( ! is_wp_error( $editor ) ) {
+				$saved = $editor->save( $jpg_file, 'image/jpeg' );
+				if ( ! is_wp_error( $saved ) && file_exists( $jpg_file ) ) {
+					$converted = true;
+				}
+			}
+		} elseif ( function_exists( 'imagecreatefrompng' ) && function_exists( 'imagejpeg' ) ) {
+			$img = @imagecreatefrompng( $file );
+			if ( $img ) {
+				if ( function_exists( 'imagepalettetotruecolor' ) ) {
+					imagepalettetotruecolor( $img );
+				}
+				$saved = @imagejpeg( $img, $jpg_file, 90 );
+				imagedestroy( $img );
+				if ( $saved && file_exists( $jpg_file ) ) {
+					$converted = true;
+				}
+			}
+		}
+
+		if ( ! $converted ) {
+			return $file;
+		}
+
+		$png_size = (int) filesize( $file );
+		$jpg_size = (int) filesize( $jpg_file );
+
+		// Only adopt JPEG if it is actually smaller
+		if ( $jpg_size > 0 && $jpg_size < $png_size ) {
+			@unlink( $file );
+			$file = $jpg_file;
+			$mime = 'image/jpeg';
+
+			if ( function_exists( 'update_attached_file' ) ) {
+				update_attached_file( $attachment_id, $file );
+			}
+			if ( function_exists( 'wp_update_post' ) ) {
+				wp_update_post( [
+					'ID'             => $attachment_id,
+					'post_mime_type' => 'image/jpeg',
+				] );
+			}
+			if ( isset( $metadata['file'] ) ) {
+				$metadata['file'] = preg_replace( '/\.png$/i', '.jpg', (string) $metadata['file'] );
+			}
+			if ( function_exists( 'wp_create_image_subsizes' ) ) {
+				$fresh_subsizes = wp_create_image_subsizes( $file, $attachment_id );
+				if ( ! empty( $fresh_subsizes['sizes'] ) ) {
+					$metadata['sizes'] = $fresh_subsizes['sizes'];
+				}
+			}
+			if ( function_exists( 'wp_update_attachment_metadata' ) ) {
+				wp_update_attachment_metadata( $attachment_id, $metadata );
+			}
+		} else {
+			// Discard the larger JPEG
+			@unlink( $jpg_file );
+		}
+
+		return $file;
 	}
 }

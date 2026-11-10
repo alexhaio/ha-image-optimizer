@@ -17,6 +17,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 class CachePurger {
 
 	/**
+	 * Whether cache purging is temporarily suspended (e.g. during bulk processing).
+	 *
+	 * @var bool
+	 */
+	private static bool $suspended = false;
+
+	/**
+	 * Suspend cache purging during batch processing.
+	 *
+	 * @return void
+	 */
+	public static function suspend(): void {
+		self::$suspended = true;
+	}
+
+	/**
+	 * Resume cache purging.
+	 *
+	 * @return void
+	 */
+	public static function resume(): void {
+		self::$suspended = false;
+	}
+
+	/**
+	 * Check if cache purging is suspended.
+	 *
+	 * @return bool
+	 */
+	public static function is_suspended(): bool {
+		return self::$suspended;
+	}
+
+	/**
 	 * Register purge hooks.
 	 *
 	 * @return void
@@ -31,6 +65,9 @@ class CachePurger {
 	 * @return void
 	 */
 	public static function purge_all_caches(): void {
+		if ( self::$suspended ) {
+			return;
+		}
 		// 1. WP Rocket
 		if ( function_exists( 'rocket_clean_domain' ) ) {
 			rocket_clean_domain();

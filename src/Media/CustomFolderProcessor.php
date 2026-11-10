@@ -283,7 +283,7 @@ class CustomFolderProcessor {
 		if ( ! empty( $settings['resize_large_images'] ) ) {
 			$max_w = (int) ( $settings['max_width'] ?? 2560 );
 			$max_h = (int) ( $settings['max_height'] ?? 2560 );
-			Resizer::downscale( $abs_path, $max_w, $max_h );
+			Resizer::maybe_downscale( $abs_path, $max_w, $max_h );
 		}
 
 		// 3. Compress original file

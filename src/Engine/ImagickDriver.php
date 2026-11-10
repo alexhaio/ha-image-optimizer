@@ -70,15 +70,24 @@ class ImagickDriver implements OptimizerInterface {
 			}
 
 			// Handle formats
+			$is_multi_frame = false;
 			if ( in_array( $mime, [ 'image/jpeg', 'image/jpg' ], true ) ) {
 				$this->optimize_jpeg( $imagick, $level );
 			} elseif ( 'image/png' === $mime ) {
 				$this->optimize_png( $imagick, $level );
 			} elseif ( 'image/gif' === $mime ) {
-				$this->optimize_gif( $imagick, $level );
+				$is_multi_frame = $this->optimize_gif( $imagick, $level );
+			} elseif ( 'image/webp' === $mime ) {
+				$this->optimize_webp( $imagick, $level );
+			} elseif ( 'image/avif' === $mime ) {
+				$this->optimize_avif( $imagick, $level );
 			}
 
-			$imagick->writeImage( $temp_file );
+			if ( $is_multi_frame ) {
+				$imagick->writeImages( $temp_file, true );
+			} else {
+				$imagick->writeImage( $temp_file );
+			}
 			$imagick->clear();
 			$imagick->destroy();
 
@@ -172,17 +181,44 @@ class ImagickDriver implements OptimizerInterface {
 	/**
 	 * GIF optimization with frame handling.
 	 *
-	 * @param \Imagick         $imagick Imagick instance.
-	 * @param CompressionLevel $level Compression level.
-	 * @return void
+	 * @param \Imagick         $imagick Imagick instance (passed by reference).
+	 * @param CompressionLevel $level   Compression level.
+	 * @return bool True if animated multi-frame GIF.
 	 */
-	private function optimize_gif( \Imagick $imagick, CompressionLevel $level ): void {
+	private function optimize_gif( \Imagick &$imagick, CompressionLevel $level ): bool {
 		if ( $imagick->getNumberImages() > 1 ) {
 			$coalesced = $imagick->coalesceImages();
-			$imagick->clear();
-			$imagick->destroy();
-			$imagick = $coalesced->deconstructImages();
+			$imagick   = $coalesced->deconstructImages();
+			return true;
 		}
+		return false;
+	}
+
+	/**
+	 * WebP optimization.
+	 *
+	 * @param \Imagick         $imagick Imagick instance.
+	 * @param CompressionLevel $level   Compression level.
+	 * @return void
+	 */
+	private function optimize_webp( \Imagick $imagick, CompressionLevel $level ): void {
+		$imagick->setImageFormat( 'webp' );
+		$quality = ( CompressionLevel::LOSSLESS === $level ) ? 100 : $level->quality( 'image/webp' );
+		$imagick->setImageCompressionQuality( $quality );
+		$imagick->setOption( 'webp:method', '4' );
+	}
+
+	/**
+	 * AVIF optimization.
+	 *
+	 * @param \Imagick         $imagick Imagick instance.
+	 * @param CompressionLevel $level   Compression level.
+	 * @return void
+	 */
+	private function optimize_avif( \Imagick $imagick, CompressionLevel $level ): void {
+		$imagick->setImageFormat( 'avif' );
+		$quality = ( CompressionLevel::LOSSLESS === $level ) ? 100 : $level->quality( 'image/avif' );
+		$imagick->setImageCompressionQuality( $quality );
 	}
 
 	/**
