@@ -20,6 +20,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 class GdDriver implements OptimizerInterface {
 
 	/**
+	 * Convert palette-based GD images to truecolor and preserve alpha channel.
+	 *
+	 * @param \GdImage $image GD image resource/instance.
+	 * @return void
+	 */
+	private function prepare_truecolor_alpha( \GdImage $image ): void {
+		if ( function_exists( 'imageistruecolor' ) && ! imageistruecolor( $image ) && function_exists( 'imagepalettetotruecolor' ) ) {
+			imagepalettetotruecolor( $image );
+		}
+		imagealphablending( $image, false );
+		imagesavealpha( $image, true );
+	}
+
+	/**
 	 * Check availability.
 	 *
 	 * @return bool
@@ -81,19 +95,16 @@ class GdDriver implements OptimizerInterface {
 				$quality = ( CompressionLevel::LOSSLESS === $level ) ? 95 : $level->quality( 'image/jpeg' );
 				$saved   = imagejpeg( $image, $temp_file, $quality );
 			} elseif ( 'image/png' === $mime ) {
-				imagealphablending( $image, false );
-				imagesavealpha( $image, true );
+				$this->prepare_truecolor_alpha( $image );
 				$saved = imagepng( $image, $temp_file, 9 );
 			} elseif ( 'image/gif' === $mime ) {
 				$saved = imagegif( $image, $temp_file );
 			} elseif ( 'image/webp' === $mime && function_exists( 'imagewebp' ) ) {
-				imagealphablending( $image, false );
-				imagesavealpha( $image, true );
+				$this->prepare_truecolor_alpha( $image );
 				$quality = ( CompressionLevel::LOSSLESS === $level ) ? 95 : $level->quality( 'image/webp' );
 				$saved   = imagewebp( $image, $temp_file, $quality );
 			} elseif ( 'image/avif' === $mime && function_exists( 'imageavif' ) ) {
-				imagealphablending( $image, false );
-				imagesavealpha( $image, true );
+				$this->prepare_truecolor_alpha( $image );
 				$quality = ( CompressionLevel::LOSSLESS === $level ) ? 95 : $level->quality( 'image/avif' );
 				$saved   = imageavif( $image, $temp_file, $quality );
 			}
@@ -165,9 +176,8 @@ class GdDriver implements OptimizerInterface {
 			return false;
 		}
 
-		// Handle transparency for PNG/GIF
-		imagealphablending( $image, false );
-		imagesavealpha( $image, true );
+		// Handle transparency and palette conversion (8-bit PNG/GIF -> truecolor) for WebP
+		$this->prepare_truecolor_alpha( $image );
 
 		$temp_file = $target_path . '.tmp.' . wp_generate_password( 6, false );
 		$result    = imagewebp( $image, $temp_file, $quality );
@@ -216,8 +226,7 @@ class GdDriver implements OptimizerInterface {
 			return false;
 		}
 
-		imagealphablending( $image, false );
-		imagesavealpha( $image, true );
+		$this->prepare_truecolor_alpha( $image );
 
 		$temp_file = $target_path . '.tmp.' . wp_generate_password( 6, false );
 		try {

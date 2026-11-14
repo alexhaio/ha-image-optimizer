@@ -57,8 +57,13 @@ class Plugin {
 		// Hook media generation pipeline
 		add_filter( 'wp_generate_attachment_metadata', [ AttachmentProcessor::class, 'filter_generate_metadata' ], 10, 2 );
 
-		// Synchronize audit cache when attachments are deleted
+		// Synchronize audit cache and reverse index when content/attachments change
 		add_action( 'delete_attachment', [ MediaAuditor::class, 'remove_from_cached_results' ] );
+		add_action( 'delete_attachment', [ MediaAuditor::class, 'clear_reverse_index' ] );
+		add_action( 'save_post', [ MediaAuditor::class, 'clear_reverse_index' ] );
+		add_action( 'deleted_post', [ MediaAuditor::class, 'clear_reverse_index' ] );
+		add_action( 'trashed_post', [ MediaAuditor::class, 'clear_reverse_index' ] );
+		add_action( 'untrashed_post', [ MediaAuditor::class, 'clear_reverse_index' ] );
 
 		// Register Background Auditor subsystem (async worker & WP-Cron)
 		BackgroundAuditor::register();

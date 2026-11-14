@@ -86,9 +86,12 @@ class CustomFolderProcessor {
 	 * @return array<string> List of relative paths from WP_CONTENT_DIR.
 	 */
 	public static function scan_images( ?array $dirs = null ): array {
-		$target_dirs = ( null !== $dirs ) ? $dirs : self::get_configured_folders();
-		$content_dir = trailingslashit( self::get_content_dir() );
-		$images      = [];
+		$target_dirs      = ( null !== $dirs ) ? $dirs : self::get_configured_folders();
+		$content_dir_raw  = self::get_content_dir();
+		$content_dir      = trailingslashit( $content_dir_raw );
+		$real_content_raw = realpath( $content_dir_raw );
+		$real_content_dir = ( false !== $real_content_raw ) ? trailingslashit( wp_normalize_path( $real_content_raw ) ) : $content_dir;
+		$images           = [];
 
 		foreach ( $target_dirs as $dir ) {
 			if ( ! is_dir( $dir ) ) {
@@ -130,8 +133,8 @@ class CustomFolderProcessor {
 
 					$file_path = wp_normalize_path( $item->getPathname() );
 
-					// Skip generated next-gen companion files (e.g. photo.jpg.webp or photo.png.webp)
-					if ( preg_match( '/\.(jpe?g|png|gif)\.(webp|avif)$/i', $file_path ) ) {
+					// Skip generated next-gen companion files (e.g. photo.jpg.webp or photo.png.avif)
+					if ( preg_match( '/\.(jpe?g|png|gif|webp)\.(webp|avif)$/i', $file_path ) ) {
 						continue;
 					}
 
@@ -140,8 +143,14 @@ class CustomFolderProcessor {
 						continue;
 					}
 
-					// Calculate relative path to WP_CONTENT_DIR
-					$rel = str_replace( $content_dir, '', $file_path );
+					// Calculate relative path to WP_CONTENT_DIR (supports symlinked directories via realpath matching)
+					if ( str_starts_with( $file_path, $real_content_dir ) ) {
+						$rel = substr( $file_path, strlen( $real_content_dir ) );
+					} elseif ( str_starts_with( $file_path, $content_dir ) ) {
+						$rel = substr( $file_path, strlen( $content_dir ) );
+					} else {
+						$rel = str_replace( $content_dir, '', $file_path );
+					}
 					$rel = ltrim( $rel, '/\\' );
 
 					$images[] = $rel;
@@ -295,23 +304,21 @@ class CustomFolderProcessor {
 		SizeGuard::protect_file( $abs_path, $before_size );
 		$after_size = (int) filesize( $abs_path );
 
-		// 4. Generate WebP
+		// 4. Generate WebP (respect configured quality and SizeGuard result)
 		$has_webp = false;
 		if ( ! empty( $settings['generate_webp'] ) ) {
-			$webp_path = WebpConverter::convert( $abs_path, 82 );
+			$webp_path = WebpConverter::convert( $abs_path, $level->quality( 'image/webp' ) );
 			if ( $webp_path && file_exists( $webp_path ) ) {
-				$has_webp = true;
-				SizeGuard::protect_nextgen( $webp_path, $after_size );
+				$has_webp = SizeGuard::protect_nextgen( $webp_path, $after_size );
 			}
 		}
 
-		// 5. Generate AVIF
+		// 5. Generate AVIF (respect configured quality and SizeGuard result)
 		$has_avif = false;
 		if ( ! empty( $settings['generate_avif'] ) ) {
-			$avif_path = AvifConverter::convert( $abs_path, 80 );
+			$avif_path = AvifConverter::convert( $abs_path, $level->quality( 'image/avif' ) );
 			if ( $avif_path && file_exists( $avif_path ) ) {
-				$has_avif = true;
-				SizeGuard::protect_nextgen( $avif_path, $after_size );
+				$has_avif = SizeGuard::protect_nextgen( $avif_path, $after_size );
 			}
 		}
 
@@ -331,7 +338,7 @@ class CustomFolderProcessor {
 		];
 
 		$stored[ $key ] = $item_data;
-		update_option( self::OPTION_NAME, $stored );
+		update_option( self::OPTION_NAME, $stored, false );
 
 		return $item_data;
 	}
@@ -345,7 +352,15 @@ class CustomFolderProcessor {
 	public static function restore_file( string $relative_path ): bool {
 		$content_dir = trailingslashit( self::get_content_dir() );
 		$rel_clean   = ltrim( str_replace( '\\', '/', $relative_path ), '/' );
-		$abs_path    = wp_normalize_path( $content_dir . $rel_clean );
+
+		if ( '' === $rel_clean || str_contains( $rel_clean, '..' ) ) {
+			return false;
+		}
+
+		$abs_path = wp_normalize_path( $content_dir . $rel_clean );
+		if ( ! str_starts_with( $abs_path, wp_normalize_path( $content_dir ) ) ) {
+			return false;
+		}
 
 		if ( ! BackupManager::restore_custom( $abs_path ) ) {
 			return false;
@@ -355,7 +370,7 @@ class CustomFolderProcessor {
 		if ( is_array( $stored ) ) {
 			$key = md5( $rel_clean );
 			unset( $stored[ $key ] );
-			update_option( self::OPTION_NAME, $stored );
+			update_option( self::OPTION_NAME, $stored, false );
 		}
 
 		return true;

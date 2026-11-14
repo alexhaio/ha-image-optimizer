@@ -41,6 +41,18 @@ class ContentFilter {
 			return $content;
 		}
 
+		// Protect tags whose inner text must never be rewritten as HTML attributes/styles
+		$preserved_blocks = [];
+		$content          = (string) preg_replace_callback(
+			'/<(script|noscript|style|template|textarea)\b[^>]*>.*?<\/\1>/is',
+			static function ( array $matches ) use ( &$preserved_blocks ): string {
+				$key                      = '<!--HA_IO_PRESERVED_' . count( $preserved_blocks ) . '-->';
+				$preserved_blocks[ $key ] = $matches[0];
+				return $key;
+			},
+			$content
+		);
+
 		// 1. Process <img> tags (skip <img> already wrapped inside a <picture> element)
 		$content = (string) preg_replace_callback(
 			'/<picture\b[^>]*>.*?<\/picture>(*SKIP)(*F)|<img\b([^>]*?)>/is',
@@ -48,12 +60,16 @@ class ContentFilter {
 			$content
 		);
 
-		// 2. Process inline background-image styles
+		// 2. Process inline background-image styles (supports single quotes inside style="..." and vice versa)
 		$content = (string) preg_replace_callback(
-			'/style\s*=\s*["\']([^"\']*?background(?:-image)?\s*:\s*url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)[^"\']*?)["\']/i',
+			'/\bstyle\s*=\s*(["\'])((?:(?!\1).)*?background(?:-image)?\s*:\s*url\(\s*(?:&quot;|&#0?39;|[\'"])?([^\'"\)]+?)(?:&quot;|&#0?39;|[\'"])?\s*\)(?:(?!\1).)*?)\1/is',
 			[ __CLASS__, 'replace_inline_style' ],
 			$content
 		);
+
+		if ( ! empty( $preserved_blocks ) ) {
+			$content = strtr( $content, $preserved_blocks );
+		}
 
 		return $content;
 	}
@@ -111,7 +127,7 @@ class ContentFilter {
 		if ( $has_avif ) {
 			$avif_srcset = self::convert_srcset( $srcset, '.avif' );
 			if ( empty( $avif_srcset ) ) {
-				$avif_srcset = esc_url( $src . '.avif' );
+				$avif_srcset = esc_url( self::append_nextgen_ext( $src, '.avif' ) );
 			}
 			$picture .= "\t<source type=\"image/avif\" srcset=\"{$avif_srcset}\"{$sizes_attr}>\n";
 		}
@@ -120,7 +136,7 @@ class ContentFilter {
 		if ( $has_webp ) {
 			$webp_srcset = self::convert_srcset( $srcset, '.webp' );
 			if ( empty( $webp_srcset ) ) {
-				$webp_srcset = esc_url( $src . '.webp' );
+				$webp_srcset = esc_url( self::append_nextgen_ext( $src, '.webp' ) );
 			}
 			$picture .= "\t<source type=\"image/webp\" srcset=\"{$webp_srcset}\"{$sizes_attr}>\n";
 		}
@@ -132,32 +148,81 @@ class ContentFilter {
 
 	/**
 	 * Map a site URL to its absolute local file path on disk.
-	 * Supports both wp-content/uploads and wp-content/themes/custom folders.
+	 * Supports uploads and custom wp-content folders, query strings, URL encoding, and relative/protocol-relative URLs.
 	 *
 	 * @param string $url URL to check.
 	 * @return string|null Absolute file path or null if external.
 	 */
 	public static function resolve_local_path( string $url ): ?string {
-		$upload_dir      = wp_upload_dir();
-		$upload_url      = $upload_dir['baseurl'];
-		$upload_dir_path = $upload_dir['basedir'];
-
-		if ( str_starts_with( $url, $upload_url ) ) {
-			return str_replace( $upload_url, $upload_dir_path, $url );
+		$url = trim( $url );
+		if ( '' === $url || str_starts_with( $url, 'data:' ) ) {
+			return null;
 		}
 
-		$content_url = content_url();
-		$content_dir = defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR : ABSPATH . 'wp-content';
+		$parsed_url = parse_url( $url );
+		if ( false === $parsed_url || empty( $parsed_url['path'] ) ) {
+			return null;
+		}
 
-		if ( str_starts_with( $url, $content_url ) ) {
-			return str_replace( $content_url, $content_dir, $url );
+		$url_path = rawurldecode( (string) $parsed_url['path'] );
+		if ( str_contains( $url_path, '..' ) ) {
+			return null;
+		}
+
+		$url_host = strtolower( (string) ( $parsed_url['host'] ?? '' ) );
+
+		$upload_dir      = wp_upload_dir();
+		$upload_url      = (string) $upload_dir['baseurl'];
+		$upload_dir_path = (string) $upload_dir['basedir'];
+		$upload_parsed   = parse_url( $upload_url );
+		$upload_host     = strtolower( (string) ( $upload_parsed['host'] ?? '' ) );
+		$upload_base_p   = (string) ( $upload_parsed['path'] ?? '' );
+
+		if ( '' !== $upload_base_p && ( '' === $url_host || $url_host === $upload_host ) && str_starts_with( $url_path, $upload_base_p ) ) {
+			$rel = substr( $url_path, strlen( $upload_base_p ) );
+			return rtrim( $upload_dir_path, '/\\' ) . '/' . ltrim( $rel, '/\\' );
+		}
+
+		$content_url    = content_url();
+		$content_dir    = defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR : ABSPATH . 'wp-content';
+		$content_parsed = parse_url( $content_url );
+		$content_host   = strtolower( (string) ( $content_parsed['host'] ?? '' ) );
+		$content_base_p = (string) ( $content_parsed['path'] ?? '' );
+
+		if ( '' !== $content_base_p && ( '' === $url_host || $url_host === $content_host ) && str_starts_with( $url_path, $content_base_p ) ) {
+			$rel = substr( $url_path, strlen( $content_base_p ) );
+			return rtrim( $content_dir, '/\\' ) . '/' . ltrim( $rel, '/\\' );
 		}
 
 		return null;
 	}
 
 	/**
+	 * Append a Next-Gen extension (.webp / .avif) cleanly before any URL query string or fragment.
+	 *
+	 * @param string $url Original image URL.
+	 * @param string $ext Extension suffix (e.g. '.webp' or '.avif').
+	 * @return string URL with appended extension.
+	 */
+	private static function append_nextgen_ext( string $url, string $ext ): string {
+		$suffix = '';
+		$hash_pos = strpos( $url, '#' );
+		if ( false !== $hash_pos ) {
+			$suffix = substr( $url, $hash_pos );
+			$url    = substr( $url, 0, $hash_pos );
+		}
+		$query_pos = strpos( $url, '?' );
+		if ( false !== $query_pos ) {
+			$suffix = substr( $url, $query_pos ) . $suffix;
+			$url    = substr( $url, 0, $query_pos );
+		}
+
+		return $url . $ext . $suffix;
+	}
+
+	/**
 	 * Convert an existing srcset string to use .webp or .avif suffixes for matching existing files.
+	 * Omits candidates without a corresponding Next-Gen file to avoid MIME/type mismatches.
 	 *
 	 * @param string $srcset Original srcset.
 	 * @param string $ext Extension suffix (e.g. '.webp' or '.avif').
@@ -187,11 +252,8 @@ class ContentFilter {
 
 			$local_path = self::resolve_local_path( $url );
 			if ( $local_path && file_exists( $local_path . $ext ) ) {
-				$converted[] = esc_url( $url . $ext ) . ( $descriptor ? ' ' . $descriptor : '' );
-				continue;
+				$converted[] = esc_url( self::append_nextgen_ext( $url, $ext ) ) . ( $descriptor ? ' ' . $descriptor : '' );
 			}
-
-			$converted[] = $entry;
 		}
 
 		return implode( ', ', $converted );
@@ -205,8 +267,14 @@ class ContentFilter {
 	 */
 	public static function replace_inline_style( array $matches ): string {
 		$full_style = $matches[0];
-		$style_body = $matches[1];
-		$img_url    = $matches[2];
+		$quote      = isset( $matches[3] ) ? $matches[1] : '"';
+		$style_body = isset( $matches[3] ) ? $matches[2] : ( $matches[1] ?? '' );
+		$img_url    = isset( $matches[3] ) ? $matches[3] : ( $matches[2] ?? '' );
+
+		// Idempotency guard: skip if already enhanced (e.g. the_content + BufferParser)
+		if ( '' === $img_url || stripos( $style_body, 'image-set(' ) !== false ) {
+			return $full_style;
+		}
 
 		$local_path = self::resolve_local_path( $img_url );
 		if ( ! $local_path || ! file_exists( $local_path ) ) {
@@ -220,8 +288,8 @@ class ContentFilter {
 			return $full_style;
 		}
 
-		$webp_url = $img_url . '.webp';
-		$avif_url = $img_url . '.avif';
+		$webp_url = self::append_nextgen_ext( $img_url, '.webp' );
+		$avif_url = self::append_nextgen_ext( $img_url, '.avif' );
 
 		$sets = [];
 		if ( $has_avif ) {
@@ -244,9 +312,9 @@ class ContentFilter {
 		$set_str = implode( ', ', $sets );
 
 		// Append modern image-set rule
-		$enhanced_style = rtrim( $style_body, ';' ) . "; background-image: -webkit-image-set({$set_str}); background-image: image-set({$set_str});";
+		$enhanced_style = rtrim( $style_body, '; ' ) . "; background-image: -webkit-image-set({$set_str}); background-image: image-set({$set_str});";
 
-		return 'style="' . esc_attr( $enhanced_style ) . '"';
+		return 'style=' . $quote . esc_attr( $enhanced_style ) . $quote;
 	}
 }
 

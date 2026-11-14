@@ -42,24 +42,47 @@ class ProgressTracker {
 			];
 		}
 
-		// Count optimized images by querying meta joined with eligible attachments
-		$optimized_query = "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
-			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
-			WHERE pm.meta_key = '_ha_io_data'
-			AND p.post_type = 'attachment'
-			AND p.post_mime_type IN ('{$mime_placeholders}')";
-		$meta_rows       = $wpdb->get_results( $optimized_query );
-
-		$optimized_count = count( $meta_rows );
+		// Stream optimized meta rows in batches to avoid exhausting PHP memory on huge libraries
+		$optimized_count = 0;
 		$total_before    = 0;
 		$total_after     = 0;
+		$batch_size      = 1000;
+		$offset          = 0;
 
-		foreach ( $meta_rows as $row ) {
-			$data = maybe_unserialize( $row->meta_value );
-			if ( is_array( $data ) && ! empty( $data['total'] ) ) {
-				$total_before += (int) ( $data['total']['before'] ?? 0 );
-				$total_after  += (int) ( $data['total']['after'] ?? 0 );
+		while ( true ) {
+			$optimized_query = $wpdb->prepare(
+				"SELECT pm.meta_value FROM {$wpdb->postmeta} pm
+				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
+				WHERE pm.meta_key = '_ha_io_data'
+				AND p.post_type = 'attachment'
+				AND p.post_mime_type IN ('{$mime_placeholders}')
+				ORDER BY pm.meta_id ASC
+				LIMIT %d OFFSET %d",
+				$batch_size,
+				$offset
+			);
+			$meta_rows = $wpdb->get_results( $optimized_query );
+
+			if ( empty( $meta_rows ) ) {
+				break;
 			}
+
+			$row_count        = count( $meta_rows );
+			$optimized_count += $row_count;
+
+			foreach ( $meta_rows as $row ) {
+				$data = maybe_unserialize( $row->meta_value );
+				if ( is_array( $data ) && ! empty( $data['total'] ) ) {
+					$total_before += (int) ( $data['total']['before'] ?? 0 );
+					$total_after  += (int) ( $data['total']['after'] ?? 0 );
+				}
+			}
+
+			if ( $row_count < $batch_size ) {
+				break;
+			}
+
+			$offset += $batch_size;
 		}
 
 		$saved_bytes   = max( 0, $total_before - $total_after );

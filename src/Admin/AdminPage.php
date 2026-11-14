@@ -167,27 +167,44 @@ class AdminPage {
 			$pacing     = MediaAuditor::get_pacing_config();
 
 			wp_localize_script( 'ha-io-auditor-script', 'ha_io_audit_vars', [
-				'ajax_url'           => admin_url( 'admin-ajax.php' ),
-				'nonce'              => wp_create_nonce( 'ha_io_admin_nonce' ),
-				'background_enabled' => $bg_enabled,
-				'background_state'   => $bg_state,
-				'pacing'             => $pacing,
-				'i18n'               => [
-					'scanning'        => esc_html__( 'Scanne Mediathek...', 'ha-image-optimizer' ),
-					'completed'       => esc_html__( 'Scan abgeschlossen!', 'ha-image-optimizer' ),
-					'error'           => esc_html__( 'Ein Fehler ist aufgetreten.', 'ha-image-optimizer' ),
-					'confirm_trash'   => esc_html__( 'Dieses Bild wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' ),
-					'confirm_bulk'    => esc_html__( 'Alle ausgewählten Bilder wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' ),
-					'trashed'         => esc_html__( 'In Papierkorb verschoben', 'ha-image-optimizer' ),
-					'resume_scan'     => esc_html__( 'Scan fortsetzen / Ungescannte prüfen', 'ha-image-optimizer' ),
-					'full_scan'       => esc_html__( 'Vollständigen Scan starten', 'ha-image-optimizer' ),
-					'start_scan'      => esc_html__( 'Scan jetzt starten', 'ha-image-optimizer' ),
-					'all_scanned'     => esc_html__( 'Alle Medien sind bereits geprüft! Keine ungescannten Dateien vorhanden.', 'ha-image-optimizer' ),
-					'bg_started'      => esc_html__( 'Hintergrund-Scan wurde gestartet.', 'ha-image-optimizer' ),
-					'bg_paused'       => esc_html__( 'Hintergrund-Scan pausiert.', 'ha-image-optimizer' ),
-					'bg_resumed'      => esc_html__( 'Hintergrund-Scan fortgesetzt.', 'ha-image-optimizer' ),
-					'bg_cancelled'    => esc_html__( 'Hintergrund-Scan abgebrochen.', 'ha-image-optimizer' ),
-					'confirm_cancel'  => esc_html__( 'Möchtest du den laufenden Hintergrund-Scan wirklich abbrechen?', 'ha-image-optimizer' ),
+				'ajax_url'            => admin_url( 'admin-ajax.php' ),
+				'nonce'               => wp_create_nonce( 'ha_io_admin_nonce' ),
+				'background_enabled'  => $bg_enabled,
+				'background_state'    => $bg_state,
+				'pacing'              => $pacing,
+				'media_trash_enabled' => MediaAuditor::is_media_trash_enabled(),
+				'i18n'                => [
+					'scanning'          => esc_html__( 'Scanne Mediathek...', 'ha-image-optimizer' ),
+					'completed'         => esc_html__( 'Scan abgeschlossen!', 'ha-image-optimizer' ),
+					'error'             => esc_html__( 'Ein Fehler ist aufgetreten.', 'ha-image-optimizer' ),
+					'confirm_trash'     => MediaAuditor::is_media_trash_enabled()
+						? esc_html__( 'Dieses Bild wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' )
+						: esc_html__( 'Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Dieses Bild wird sofort dauerhaft gelöscht (ein Backup wird vorher unter /ha-backups/ angelegt). Fortfahren?', 'ha-image-optimizer' ),
+					'confirm_bulk'      => MediaAuditor::is_media_trash_enabled()
+						? esc_html__( 'Alle ausgewählten Bilder wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' )
+						: esc_html__( 'Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Alle ausgewählten Bilder werden dauerhaft gelöscht (Backups werden unter /ha-backups/ angelegt). Fortfahren?', 'ha-image-optimizer' ),
+					'trashed'           => esc_html__( 'In Papierkorb verschoben', 'ha-image-optimizer' ),
+					'trash_btn'         => MediaAuditor::is_media_trash_enabled()
+						? esc_html__( '🗑️ Papierkorb', 'ha-image-optimizer' )
+						: esc_html__( '🗑️ Löschen (mit Backup)', 'ha-image-optimizer' ),
+					'bulk_trash_btn'    => MediaAuditor::is_media_trash_enabled()
+						? esc_html__( '🗑️ Ausgewählte in Papierkorb', 'ha-image-optimizer' )
+						: esc_html__( '🗑️ Ausgewählte löschen (Backup)', 'ha-image-optimizer' ),
+					'resume_scan'       => esc_html__( 'Scan fortsetzen / Ungescannte prüfen', 'ha-image-optimizer' ),
+					'full_scan'         => esc_html__( 'Vollständigen Scan starten', 'ha-image-optimizer' ),
+					'start_scan'        => esc_html__( 'Scan jetzt starten', 'ha-image-optimizer' ),
+					'all_scanned'       => esc_html__( 'Alle Medien sind bereits geprüft! Keine ungescannten Dateien vorhanden.', 'ha-image-optimizer' ),
+					'bg_start_scan'     => esc_html__( 'Hintergrund-Scan starten', 'ha-image-optimizer' ),
+					'bg_resume_scan'    => esc_html__( 'Hintergrund-Scan fortsetzen', 'ha-image-optimizer' ),
+					'bg_started'        => esc_html__( 'Hintergrund-Scan wurde gestartet.', 'ha-image-optimizer' ),
+					'bg_paused'         => esc_html__( 'Hintergrund-Scan pausiert.', 'ha-image-optimizer' ),
+					'bg_resumed'        => esc_html__( 'Hintergrund-Scan fortgesetzt.', 'ha-image-optimizer' ),
+					'bg_cancelled'      => esc_html__( 'Hintergrund-Scan abgebrochen.', 'ha-image-optimizer' ),
+					'confirm_cancel'    => esc_html__( 'Möchtest du den laufenden Hintergrund-Scan wirklich abbrechen?', 'ha-image-optimizer' ),
+					'running'           => esc_html__( 'Läuft', 'ha-image-optimizer' ),
+					'waiting_night'     => esc_html__( 'Wartet auf Nachtfenster', 'ha-image-optimizer' ),
+					'cooldown'          => esc_html__( 'Serverlast-Abkühlung', 'ha-image-optimizer' ),
+					'paused'            => esc_html__( 'Pausiert', 'ha-image-optimizer' ),
 				],
 			] );
 		}
@@ -269,7 +286,7 @@ class AdminPage {
 			wp_die( esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ), 403 );
 		}
 
-		$raw = isset( $_POST['ha_io_settings'] ) ? (array) $_POST['ha_io_settings'] : [];
+		$raw = isset( $_POST['ha_io_settings'] ) ? (array) wp_unslash( $_POST['ha_io_settings'] ) : [];
 		Settings::update( $raw );
 
 		// Update uninstall data protection setting as per HA standards

@@ -64,6 +64,11 @@ class ImagickDriver implements OptimizerInterface {
 			$imagick = new \Imagick( $file_path );
 			$mime    = wp_check_filetype( $file_path )['type'] ?? '';
 
+			// Auto-orient before stripping EXIF so portrait photos do not lose their rotation
+			if ( ! $keep_exif && $imagick->getNumberImages() === 1 ) {
+				$this->auto_orient( $imagick );
+			}
+
 			// Strip metadata if not keeping EXIF
 			if ( ! $keep_exif ) {
 				$imagick->stripImage();
@@ -209,6 +214,35 @@ class ImagickDriver implements OptimizerInterface {
 	}
 
 	/**
+	 * Physically apply EXIF orientation before stripping metadata or converting formats.
+	 *
+	 * @param \Imagick $imagick Imagick instance.
+	 * @return void
+	 */
+	private function auto_orient( \Imagick $imagick ): void {
+		try {
+			$orientation = $imagick->getImageOrientation();
+			if ( $orientation <= \Imagick::ORIENTATION_TOPLEFT ) {
+				return;
+			}
+
+			if ( method_exists( $imagick, 'autoOrient' ) ) {
+				$imagick->autoOrient();
+			} else {
+				match ( $orientation ) {
+					\Imagick::ORIENTATION_BOTTOMRIGHT => $imagick->rotateImage( new \ImagickPixel( 'none' ), 180 ),
+					\Imagick::ORIENTATION_RIGHTTOP    => $imagick->rotateImage( new \ImagickPixel( 'none' ), 90 ),
+					\Imagick::ORIENTATION_LEFTBOTTOM  => $imagick->rotateImage( new \ImagickPixel( 'none' ), -90 ),
+					default                           => null,
+				};
+				$imagick->setImageOrientation( \Imagick::ORIENTATION_TOPLEFT );
+			}
+		} catch ( \Throwable ) {
+			// Ignore orientation failures on exotic image headers
+		}
+	}
+
+	/**
 	 * AVIF optimization.
 	 *
 	 * @param \Imagick         $imagick Imagick instance.
@@ -239,11 +273,27 @@ class ImagickDriver implements OptimizerInterface {
 
 		try {
 			$imagick = new \Imagick( $source_path );
-			$imagick->setImageFormat( 'webp' );
-			$imagick->setImageCompressionQuality( $quality );
-			$imagick->setOption( 'webp:method', '4' ); // Fast & balanced compression (replaces method 6 to prevent server timeouts)
+			if ( $imagick->getNumberImages() > 1 ) {
+				$coalesced = $imagick->coalesceImages();
+				$imagick->clear();
+				$imagick->destroy();
+				$imagick = $coalesced;
 
-			$imagick->writeImage( $temp_file );
+				foreach ( $imagick as $frame ) {
+					$frame->setImageFormat( 'webp' );
+					$frame->setImageCompressionQuality( $quality );
+					$frame->setOption( 'webp:method', '4' );
+				}
+
+				$imagick->writeImages( $temp_file, true );
+			} else {
+				$this->auto_orient( $imagick );
+				$imagick->setImageFormat( 'webp' );
+				$imagick->setImageCompressionQuality( $quality );
+				$imagick->setOption( 'webp:method', '4' ); // Fast & balanced compression (replaces method 6 to prevent server timeouts)
+
+				$imagick->writeImage( $temp_file );
+			}
 			$imagick->clear();
 			$imagick->destroy();
 
@@ -293,6 +343,9 @@ class ImagickDriver implements OptimizerInterface {
 
 		try {
 			$imagick = new \Imagick( $source_path );
+			if ( $imagick->getNumberImages() === 1 ) {
+				$this->auto_orient( $imagick );
+			}
 			$imagick->setImageFormat( 'avif' );
 			$imagick->setImageCompressionQuality( $quality );
 

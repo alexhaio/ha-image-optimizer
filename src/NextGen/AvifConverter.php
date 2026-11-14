@@ -31,6 +31,11 @@ class AvifConverter {
 			return null;
 		}
 
+		// Do not re-encode files that are already AVIF (.avif.avif)
+		if ( str_ends_with( strtolower( $source_path ), '.avif' ) ) {
+			return null;
+		}
+
 		$target_path = self::get_destination_path( $source_path );
 
 		try {

@@ -31,6 +31,11 @@ class WebpConverter {
 			return null;
 		}
 
+		// Do not re-encode files that are already WebP (.webp.webp)
+		if ( str_ends_with( strtolower( $source_path ), '.webp' ) ) {
+			return null;
+		}
+
 		$target_path = self::get_destination_path( $source_path );
 
 		try {

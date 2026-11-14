@@ -115,12 +115,24 @@ class MediaAuditor {
 
 	/**
 	 * Get SQL optimizer hints and options for non-blocking read safety.
+	 * Skips MySQL-specific hints on SQLite engines and omits removed SQL_NO_CACHE (MySQL 8.4+ syntax error).
 	 *
 	 * @return string
 	 */
 	public static function get_sql_safeguard_prefix(): string {
+		global $wpdb;
+
+		if ( class_exists( 'WP_SQLite_DB', false ) || ( isset( $wpdb ) && str_contains( strtolower( get_class( $wpdb ) ), 'sqlite' ) ) ) {
+			return '';
+		}
+
+		// Detect MariaDB if live connection info is present (MariaDB uses SET STATEMENT max_statement_time instead of MySQL optimizer hint)
+		if ( isset( $wpdb->dbh ) && is_object( $wpdb->dbh ) && isset( $wpdb->dbh->server_info ) && str_contains( strtolower( (string) $wpdb->dbh->server_info ), 'mariadb' ) ) {
+			return '';
+		}
+
 		$pacing = self::get_pacing_config();
-		return sprintf( '/*+ MAX_EXECUTION_TIME(%d) */ SQL_NO_CACHE ', (int) $pacing['timeout_ms'] );
+		return sprintf( '/*+ MAX_EXECUTION_TIME(%d) */ ', (int) $pacing['timeout_ms'] );
 	}
 
 	/**
@@ -357,9 +369,9 @@ class MediaAuditor {
 			'built_at'    => time(),
 		];
 
-		$twelve_hours = defined( 'HOUR_IN_SECONDS' ) ? 12 * HOUR_IN_SECONDS : 43200;
+		$two_hours = defined( 'HOUR_IN_SECONDS' ) ? 2 * HOUR_IN_SECONDS : 7200;
 		if ( function_exists( 'set_transient' ) ) {
-			set_transient( self::OPTION_REVERSE_INDEX, $index, $twelve_hours );
+			@set_transient( self::OPTION_REVERSE_INDEX, $index, $two_hours );
 		}
 
 		self::$reverse_index_cache = $index;
@@ -1385,7 +1397,7 @@ class MediaAuditor {
 		$acf_sql = $wpdb->prepare(
 			"SELECT {$safeguard}p.ID, p.post_title, p.post_type, pm.meta_key FROM {$wpdb->postmeta} pm
 			INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
-			WHERE pm.meta_key NOT LIKE '\_%'
+			WHERE pm.meta_key NOT LIKE %s
 			AND pm.meta_key NOT IN ('_wp_attached_file', '_wp_attachment_metadata')
 			AND (
 				pm.meta_value = %s
@@ -1398,6 +1410,7 @@ class MediaAuditor {
 			AND p.post_type NOT IN ('attachment', 'revision')
 			AND p.post_status != 'trash'
 			LIMIT 3",
+			$wpdb->esc_like( '_' ) . '%',
 			$id_str,
 			'%i:' . $attachment_id . ';%',
 			$id_str . ',%',
@@ -1471,14 +1484,17 @@ class MediaAuditor {
 				INNER JOIN {$wpdb->posts} p ON (pm.post_id = p.ID)
 				WHERE pm.post_id != %d
 				AND p.post_type NOT IN ('attachment', 'revision')
-				AND pm.meta_key NOT LIKE '_wp_%'
-				AND pm.meta_key NOT LIKE '_ha_io_%'
+				AND pm.meta_key NOT LIKE %s
+				AND pm.meta_key NOT LIKE %s
 				AND pm.meta_key NOT IN ('_thumbnail_id', '_product_image_gallery', '_elementor_data', '_elementor_page_settings', '_elementor_css')
-				AND pm.meta_key NOT LIKE '_acf_%'
+				AND pm.meta_key NOT LIKE %s
 				AND p.post_status != 'trash'
 				AND ({$where_pm})
 				LIMIT 3",
 				$attachment_id,
+				$wpdb->esc_like( '_wp_' ) . '%',
+				$wpdb->esc_like( '_ha_io_' ) . '%',
+				$wpdb->esc_like( '_acf_' ) . '%',
 				...$pm_params
 			)
 		);
@@ -1518,11 +1534,12 @@ class MediaAuditor {
 						OR um.meta_value LIKE %s
 						OR um.meta_value LIKE %s
 					)
-					AND um.meta_key NOT LIKE 'ha_io_%'
+					AND um.meta_key NOT LIKE %s
 					LIMIT 3",
 					(string) $attachment_id,
 					'%"' . $attachment_id . '"%',
-					'%' . $wpdb->esc_like( $filename ) . '%'
+					'%' . $wpdb->esc_like( $filename ) . '%',
+					$wpdb->esc_like( 'ha_io_' ) . '%'
 				)
 			);
 
@@ -2010,11 +2027,14 @@ class MediaAuditor {
 			$where_opts = implode( ' OR ', $opt_clauses );
 			$opts_sql   = $wpdb->prepare(
 				"SELECT option_name FROM {$wpdb->options}
-				WHERE option_name NOT LIKE '_transient%'
-				AND option_name NOT LIKE '_site_transient%'
-				AND option_name NOT LIKE '%_ha_io_%'
+				WHERE option_name NOT LIKE %s
+				AND option_name NOT LIKE %s
+				AND option_name NOT LIKE %s
 				AND ({$where_opts})
 				LIMIT 3",
+				$wpdb->esc_like( '_transient' ) . '%',
+				$wpdb->esc_like( '_site_transient' ) . '%',
+				'%' . $wpdb->esc_like( '_ha_io_' ) . '%',
 				...$opt_params
 			);
 			$opt_rows = $wpdb->get_results( $opts_sql );
@@ -2084,28 +2104,65 @@ class MediaAuditor {
 	public static function search_active_theme_files( array|string $filename, array|string $rel_file = '' ): ?string {
 		if ( null === self::$theme_files_cache ) {
 			self::$theme_files_cache = [];
-			$dirs = [];
+			$theme_dirs              = [];
 
 			if ( function_exists( 'get_stylesheet_directory' ) ) {
-				$dirs[] = get_stylesheet_directory();
+				$stylesheet_dir = (string) get_stylesheet_directory();
+				if ( '' !== $stylesheet_dir && is_dir( $stylesheet_dir ) ) {
+					$theme_dirs['child'] = $stylesheet_dir;
+				}
 			}
 			if ( function_exists( 'get_template_directory' ) ) {
-				$dirs[] = get_template_directory();
+				$template_dir = (string) get_template_directory();
+				if ( '' !== $template_dir && is_dir( $template_dir ) && ! in_array( $template_dir, $theme_dirs, true ) ) {
+					$theme_dirs['parent'] = $template_dir;
+				}
 			}
 
-			$dirs = array_unique( array_filter( $dirs ) );
+			$allowed_ext = [ 'php', 'html', 'css', 'scss', 'json', 'js' ];
+			$root_files  = [ 'style.css', 'theme.json', 'header.php', 'footer.php', 'front-page.php', 'functions.php', 'index.php' ];
+			$sub_dirs    = [ 'templates', 'parts', 'patterns', 'inc', 'assets', 'src', 'css' ];
+			$max_files   = 250;
+			$file_count  = 0;
 
-			foreach ( $dirs as $dir ) {
-				if ( ! is_dir( $dir ) ) {
-					continue;
-				}
+			foreach ( $theme_dirs as $scope => $dir ) {
+				$base_norm = wp_normalize_path( trailingslashit( $dir ) );
 
-				// Check primary styling and config files first
-				$key_files = [ 'style.css', 'theme.json', 'header.php', 'footer.php', 'front-page.php' ];
-				foreach ( $key_files as $kf ) {
+				foreach ( $root_files as $kf ) {
 					$full = trailingslashit( $dir ) . $kf;
 					if ( file_exists( $full ) && is_readable( $full ) && (int) @filesize( $full ) < 500000 ) {
-						self::$theme_files_cache[ $kf ] = (string) file_get_contents( $full );
+						self::$theme_files_cache[ $scope . ':' . $kf ] = (string) @file_get_contents( $full );
+						$file_count++;
+					}
+				}
+
+				foreach ( $sub_dirs as $sub ) {
+					$sub_path = trailingslashit( $dir ) . $sub;
+					if ( ! is_dir( $sub_path ) ) {
+						continue;
+					}
+					try {
+						$iterator = new \RecursiveIteratorIterator(
+							new \RecursiveDirectoryIterator( $sub_path, \RecursiveDirectoryIterator::SKIP_DOTS ),
+							\RecursiveIteratorIterator::SELF_FIRST
+						);
+						foreach ( $iterator as $item ) {
+							if ( $file_count >= $max_files ) {
+								break 3;
+							}
+							if ( ! $item->isFile() || ! $item->isReadable() || $item->getSize() >= 500000 ) {
+								continue;
+							}
+							$ext = strtolower( $item->getExtension() );
+							if ( ! in_array( $ext, $allowed_ext, true ) ) {
+								continue;
+							}
+							$rel = ltrim( str_replace( $base_norm, '', wp_normalize_path( $item->getPathname() ) ), '/' );
+							self::$theme_files_cache[ $scope . ':' . $rel ] = (string) @file_get_contents( $item->getPathname() );
+							$file_count++;
+						}
+					} catch ( \Throwable ) {
+						continue;
 					}
 				}
 			}
@@ -2114,15 +2171,16 @@ class MediaAuditor {
 		$rel_files = is_array( $rel_file ) ? $rel_file : ( ! empty( $rel_file ) ? [ $rel_file ] : [] );
 		$safe_fns  = is_array( $filename ) ? $filename : ( ! empty( $filename ) && strlen( $filename ) >= 6 ? [ $filename ] : [] );
 
-		foreach ( self::$theme_files_cache as $file_name => $content ) {
+		foreach ( self::$theme_files_cache as $file_key => $content ) {
+			$display_name = preg_replace( '/^(?:child|parent):/', '', (string) $file_key );
 			foreach ( $rel_files as $rf ) {
 				if ( ! empty( $rf ) && str_contains( $content, $rf ) ) {
-					return $file_name;
+					return $display_name;
 				}
 			}
 			foreach ( $safe_fns as $fn ) {
 				if ( ! empty( $fn ) && strlen( $fn ) >= 6 && str_contains( $content, $fn ) ) {
-					return $file_name;
+					return $display_name;
 				}
 			}
 		}
@@ -2391,10 +2449,27 @@ class MediaAuditor {
 	}
 
 	/**
+	 * Check whether WordPress Media Trash is enabled.
+	 * When MEDIA_TRASH is false/undefined (WordPress default), wp_delete_attachment() deletes files permanently.
+	 *
+	 * @return bool
+	 */
+	public static function is_media_trash_enabled(): bool {
+		if ( ! defined( 'MEDIA_TRASH' ) || ! MEDIA_TRASH ) {
+			return false;
+		}
+		if ( defined( 'EMPTY_TRASH_DAYS' ) && (int) EMPTY_TRASH_DAYS <= 0 ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Move an attachment safely to trash or delete it.
+	 * Always creates an original backup before permanent deletion (including when MEDIA_TRASH is disabled).
 	 *
 	 * @param int  $attachment_id Attachment ID.
-	 * @param bool $force_delete If true, permanently deletes files. If false, moves to trash.
+	 * @param bool $force_delete If true, permanently deletes files. If false, moves to trash when MEDIA_TRASH is active.
 	 * @return bool True on success.
 	 */
 	public static function trash_attachment( int $attachment_id, bool $force_delete = false ): bool {
@@ -2403,8 +2478,9 @@ class MediaAuditor {
 			return false;
 		}
 
-		// Optional backup before permanent deletion
-		if ( $force_delete ) {
+		// Always back up the file whenever wp_delete_attachment() will permanently delete files from disk
+		$will_delete_permanently = $force_delete || ! self::is_media_trash_enabled();
+		if ( $will_delete_permanently ) {
 			$file = get_attached_file( $attachment_id );
 			if ( $file && file_exists( $file ) ) {
 				BackupManager::backup( $attachment_id, $file );

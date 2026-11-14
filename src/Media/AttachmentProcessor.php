@@ -42,7 +42,11 @@ class AttachmentProcessor {
 	 * @return array<string, mixed>
 	 */
 	public static function filter_generate_metadata( array $metadata, int $attachment_id ): array {
-		return self::process( $attachment_id, $metadata );
+		try {
+			return self::process( $attachment_id, $metadata );
+		} catch ( \Throwable ) {
+			return $metadata;
+		}
 	}
 
 	/**
@@ -81,20 +85,30 @@ class AttachmentProcessor {
 			}
 		}
 
-		$settings = Settings::get_all();
+		$settings  = Settings::get_all();
+		$optimizer = OptimizerFactory::create();
+
+		$initial_orig_size = (int) filesize( $file );
 
 		// 1. If forcing re-optimization and backup exists, restore master so we compress from pristine original
 		if ( $force && BackupManager::has_backup( $attachment_id ) ) {
-			$backup_file = BackupManager::get_backup_file_path( $attachment_id, $file );
-			if ( file_exists( $backup_file ) ) {
-				@copy( $backup_file, $file );
-				// Clean existing Next-Gen formats before re-generating
-				BackupManager::clean_nextgen_files( $attachment_id );
-				// Re-create intermediate sizes from uncompressed master if supported
+			$restored_file = BackupManager::restore_master_for_reoptimize( $attachment_id );
+			if ( $restored_file && file_exists( $restored_file ) ) {
+				$file = $restored_file;
+				$mime = get_post_mime_type( $attachment_id ) ?: $mime;
+
+				// Refresh metadata & intermediate sizes from restored master
 				if ( function_exists( 'wp_create_image_subsizes' ) ) {
 					$fresh_subsizes = wp_create_image_subsizes( $file, $attachment_id );
 					if ( ! empty( $fresh_subsizes['sizes'] ) ) {
 						$metadata['sizes'] = $fresh_subsizes['sizes'];
+						if ( isset( $fresh_subsizes['file'] ) ) {
+							$metadata['file'] = $fresh_subsizes['file'];
+						}
+						if ( isset( $fresh_subsizes['width'], $fresh_subsizes['height'] ) ) {
+							$metadata['width']  = $fresh_subsizes['width'];
+							$metadata['height'] = $fresh_subsizes['height'];
+						}
 						wp_update_attachment_metadata( $attachment_id, $metadata );
 					}
 				}
@@ -105,6 +119,7 @@ class AttachmentProcessor {
 		if ( ! empty( $settings['backup_originals'] ) ) {
 			BackupManager::backup( $attachment_id, $file );
 		}
+		$initial_orig_size = max( $initial_orig_size, (int) filesize( $file ) );
 
 		// 3. Downscale if oversized
 		if ( ! empty( $settings['resize_large_images'] ) ) {
@@ -155,12 +170,6 @@ class AttachmentProcessor {
 			$sizes_level     = CompressionLevel::tryFrom( $sizes_level_key ) ?? CompressionLevel::SMART;
 		}
 
-		try {
-			$optimizer = OptimizerFactory::create();
-		} catch ( \Throwable $e ) {
-			return $metadata;
-		}
-
 		$keep_exif = ! empty( $settings['keep_exif'] );
 
 		$stats = [
@@ -181,7 +190,7 @@ class AttachmentProcessor {
 		];
 
 		// 4. Optimize Original Master File
-		$orig_before = (int) filesize( $file );
+		$orig_before = max( $initial_orig_size, (int) filesize( $file ) );
 		if ( $force && ! empty( $existing_data['original']['before'] ) && (int) $existing_data['original']['before'] > $orig_before ) {
 			$orig_before = (int) $existing_data['original']['before'];
 		}
@@ -192,6 +201,17 @@ class AttachmentProcessor {
 		} catch ( \Throwable $e ) {
 			// Continue gracefully if image optimization fails
 		}
+
+		// Sync dimensions in case EXIF auto-orientation rotated width/height
+		$dims_after = function_exists( 'wp_getimagesize' ) ? wp_getimagesize( $file ) : ( function_exists( 'getimagesize' ) ? @getimagesize( $file ) : false );
+		if ( ! empty( $dims_after[0] ) && ! empty( $dims_after[1] ) ) {
+			$metadata['width']  = (int) $dims_after[0];
+			$metadata['height'] = (int) $dims_after[1];
+			if ( function_exists( 'wp_update_attachment_metadata' ) ) {
+				wp_update_attachment_metadata( $attachment_id, $metadata );
+			}
+		}
+
 		$orig_after = (int) filesize( $file );
 		$stats['total']['after'] += $orig_after;
 
@@ -351,6 +371,27 @@ class AttachmentProcessor {
 
 		// Only adopt JPEG if it is actually smaller
 		if ( $jpg_size > 0 && $jpg_size < $png_size ) {
+			$orig_rel = isset( $metadata['file'] ) ? (string) $metadata['file'] : '';
+			if ( function_exists( 'update_post_meta' ) ) {
+				update_post_meta( $attachment_id, '_ha_io_backup_origin', [
+					'rel_file' => $orig_rel,
+					'abs_file' => $file,
+					'mime'     => 'image/png',
+				] );
+			}
+
+			// Remove old PNG intermediate thumbnails so no orphan files remain on disk
+			$old_sizes = ( ! empty( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) ? $metadata['sizes'] : [];
+			$base_dir  = dirname( $file );
+			foreach ( $old_sizes as $old_size_info ) {
+				if ( ! empty( $old_size_info['file'] ) ) {
+					$old_sub = trailingslashit( $base_dir ) . $old_size_info['file'];
+					if ( file_exists( $old_sub ) ) {
+						@unlink( $old_sub );
+					}
+				}
+			}
+
 			@unlink( $file );
 			$file = $jpg_file;
 			$mime = 'image/jpeg';

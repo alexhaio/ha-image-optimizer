@@ -388,12 +388,12 @@
 						});
 					} else {
 						alert(res.data ? res.data.message : ha_io_audit_vars.i18n.error);
-						$btn.prop('disabled', false).text('🗑️ Papierkorb');
+						$btn.prop('disabled', false).text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.trash_btn) || '🗑️ Papierkorb');
 					}
 				},
 				error: function () {
 					alert(ha_io_audit_vars.i18n.error);
-					$btn.prop('disabled', false).text('🗑️ Papierkorb');
+					$btn.prop('disabled', false).text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.trash_btn) || '🗑️ Papierkorb');
 				}
 			});
 		});
@@ -416,10 +416,14 @@
 			$btn.prop('disabled', true).text('Verschiebe ' + ids.length + ' Bilder...');
 
 			let completed = 0;
+			let failed = 0;
 			function trashNext() {
 				if (ids.length === 0) {
-					$btn.prop('disabled', true).text('🗑️ Ausgewählte in Papierkorb');
+					$btn.prop('disabled', false).text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.bulk_trash_btn) || '🗑️ Ausgewählte in Papierkorb');
 					applyFilters();
+					if (failed > 0) {
+						alert((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.error ? ha_io_audit_vars.i18n.error : 'Fehler') + ' (' + failed + ')');
+					}
 					return;
 				}
 
@@ -433,9 +437,18 @@
 						attachment_id: id,
 						force_delete: 0
 					},
+					success: function (res) {
+						if (res && res.success) {
+							completed++;
+							$('tr[data-id="' + id + '"]').remove();
+						} else {
+							failed++;
+						}
+					},
+					error: function () {
+						failed++;
+					},
 					complete: function () {
-						completed++;
-						$('tr[data-id="' + id + '"]').remove();
 						$btn.text('Verschiebe (' + completed + ' fertig)...');
 						trashNext();
 					}
@@ -513,6 +526,7 @@
 			$('#ha-io-bg-status-msg').text(state.current_status || '');
 			$('#ha-io-bg-progress-counts').text(processed + ' / ' + total + ' (' + percent + '%)');
 			$('#ha-io-bg-progress-bar').css('width', percent + '%');
+			$('#ha-io-btn-bg-start').attr('data-state', status);
 
 			if (status === 'running' || status === 'waiting_night' || status === 'cooldown') {
 				$('#ha-io-bg-progress-wrapper').slideDown();
@@ -522,12 +536,12 @@
 			} else if (status === 'paused') {
 				$('#ha-io-bg-progress-wrapper').slideDown();
 				$('#ha-io-btn-bg-start').prop('disabled', false);
-				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.resume_scan) || 'Hintergrund-Scan fortsetzen');
+				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.bg_resume_scan) || 'Hintergrund-Scan fortsetzen');
 				$('#ha-io-btn-bg-pause').prop('disabled', true);
 				$('#ha-io-btn-bg-cancel').prop('disabled', false);
 			} else {
 				$('#ha-io-btn-bg-start').prop('disabled', false);
-				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.start_scan) || 'Hintergrund-Scan starten');
+				$('#ha-io-btn-bg-start-text').text((ha_io_audit_vars.i18n && ha_io_audit_vars.i18n.bg_start_scan) || 'Hintergrund-Scan starten');
 				$('#ha-io-btn-bg-pause').prop('disabled', true);
 				$('#ha-io-btn-bg-cancel').prop('disabled', true);
 			}
@@ -561,7 +575,7 @@
 		}
 
 		$('#ha-io-btn-bg-start').on('click', function () {
-			const isPaused = $('#ha-io-btn-bg-start-text').text().indexOf('fortsetzen') !== -1;
+			const isPaused = $(this).attr('data-state') === 'paused';
 			const action = isPaused ? 'ha_io_audit_background_resume' : 'ha_io_audit_background_start';
 			const skipScanned = $('#ha-io-audit-skip-scanned').is(':checked') ? 1 : 0;
 

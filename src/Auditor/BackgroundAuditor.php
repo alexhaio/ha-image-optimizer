@@ -19,6 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class BackgroundAuditor {
 
 	/**
+	 * Transient key for worker mutex lock.
+	 */
+	public const LOCK_TRANSIENT = 'ha_io_bg_worker_lock';
+
+	/**
 	 * Option key storing the background audit state.
 	 */
 	public const OPTION_STATE = 'ha_io_audit_background_state';
@@ -152,10 +157,20 @@ class BackgroundAuditor {
 	 * @param string|null $reason Out-parameter with explanation if not allowed.
 	 * @return bool
 	 */
-	public static function can_run_now( ?string &$reason = null ): bool {
+	/**
+	 * Determine whether the background auditor can run right now (night window & server load checks).
+	 *
+	 * @param string|null $reason         Optional human-readable reason if blocked.
+	 * @param string|null $blocked_status Optional target status code if blocked ('idle', 'waiting_night', 'cooldown').
+	 * @return bool
+	 */
+	public static function can_run_now( ?string &$reason = null, ?string &$blocked_status = null ): bool {
+		$blocked_status = null;
+
 		$is_bg_enabled = (bool) Settings::get( 'auditor_background_enabled', false );
 		if ( ! $is_bg_enabled ) {
-			$reason = __( 'Hintergrund-Tasks sind in den Einstellungen deaktiviert.', 'ha-image-optimizer' );
+			$reason         = __( 'Hintergrund-Tasks sind in den Einstellungen deaktiviert.', 'ha-image-optimizer' );
+			$blocked_status = self::STATUS_IDLE;
 			return false;
 		}
 
@@ -172,6 +187,7 @@ class BackgroundAuditor {
 				$end,
 				$current
 			);
+			$blocked_status = self::STATUS_WAITING_NIGHT;
 			return false;
 		}
 
@@ -184,6 +200,7 @@ class BackgroundAuditor {
 				number_format( $server_load, 1 ),
 				number_format( $max_load, 1 )
 			);
+			$blocked_status = self::STATUS_COOLDOWN;
 			return false;
 		}
 
@@ -198,6 +215,19 @@ class BackgroundAuditor {
 	 * @return array<string, mixed> New state.
 	 */
 	public static function start( bool $skip_scanned = true, bool $reset_cache = false ): array {
+		$reason         = null;
+		$blocked_status = null;
+		$can_run        = self::can_run_now( $reason, $blocked_status );
+
+		if ( ! $can_run && self::STATUS_IDLE === $blocked_status ) {
+			self::clear_cron();
+			return self::update_state( [
+				'status'         => self::STATUS_IDLE,
+				'last_error'     => (string) $reason,
+				'current_status' => (string) $reason,
+			] );
+		}
+
 		if ( $reset_cache ) {
 			MediaAuditor::clear_results();
 		}
@@ -207,12 +237,9 @@ class BackgroundAuditor {
 		$cached          = MediaAuditor::get_cached_results();
 		$already_scanned = ! empty( $cached['items'] ) ? count( $cached['items'] ) : 0;
 
-		$reason = null;
-		$can_run = self::can_run_now( $reason );
-
 		$status = $can_run
 			? self::STATUS_RUNNING
-			: ( str_contains( (string) $reason, 'Nacht' ) ? self::STATUS_WAITING_NIGHT : self::STATUS_COOLDOWN );
+			: ( $blocked_status ?: self::STATUS_COOLDOWN );
 
 		$status_msg = $can_run
 			? sprintf( __( 'Hintergrund-Scan gestartet (%d Medien in der Queue)...', 'ha-image-optimizer' ), $total )
@@ -267,15 +294,25 @@ class BackgroundAuditor {
 	public static function resume(): array {
 		$state = self::get_state();
 		if ( self::STATUS_PAUSED === $state['status'] ) {
-			$reason  = null;
-			$can_run = self::can_run_now( $reason );
+			$reason         = null;
+			$blocked_status = null;
+			$can_run        = self::can_run_now( $reason, $blocked_status );
+
+			if ( ! $can_run && self::STATUS_IDLE === $blocked_status ) {
+				self::clear_cron();
+				return self::update_state( [
+					'last_error'     => (string) $reason,
+					'current_status' => (string) $reason,
+				] );
+			}
 
 			$new_status = $can_run
 				? self::STATUS_RUNNING
-				: ( str_contains( (string) $reason, 'Nacht' ) ? self::STATUS_WAITING_NIGHT : self::STATUS_COOLDOWN );
+				: ( $blocked_status ?: self::STATUS_COOLDOWN );
 
 			$state = self::update_state( [
 				'status'         => $new_status,
+				'last_error'     => '',
 				'current_status' => $can_run
 					? __( 'Hintergrund-Scan wird fortgesetzt...', 'ha-image-optimizer' )
 					: (string) $reason,
@@ -313,82 +350,110 @@ class BackgroundAuditor {
 	 * @return array<string, mixed> Updated state.
 	 */
 	public static function process_batch(): array {
-		$state = self::get_state();
-
-		// Only proceed if currently active
-		if ( ! in_array( $state['status'], [ self::STATUS_RUNNING, self::STATUS_WAITING_NIGHT, self::STATUS_COOLDOWN ], true ) ) {
-			return $state;
+		if ( function_exists( 'get_transient' ) && get_transient( self::LOCK_TRANSIENT ) ) {
+			return self::get_state();
+		}
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( self::LOCK_TRANSIENT, 1, 120 );
 		}
 
-		$reason = null;
-		if ( ! self::can_run_now( $reason ) ) {
-			$new_status = str_contains( (string) $reason, 'Nacht' ) ? self::STATUS_WAITING_NIGHT : self::STATUS_COOLDOWN;
-			return self::update_state( [
-				'status'         => $new_status,
-				'current_status' => (string) $reason,
+		$pacing       = MediaAuditor::get_pacing_config();
+		$should_chain = false;
+		$new_state    = self::get_state();
+
+		try {
+			$state = self::get_state();
+
+			// Only proceed if currently active
+			if ( ! in_array( $state['status'], [ self::STATUS_RUNNING, self::STATUS_WAITING_NIGHT, self::STATUS_COOLDOWN ], true ) ) {
+				return $state;
+			}
+
+			$reason         = null;
+			$blocked_status = null;
+			if ( ! self::can_run_now( $reason, $blocked_status ) ) {
+				if ( self::STATUS_IDLE === $blocked_status ) {
+					self::clear_cron();
+					return self::update_state( [
+						'status'         => self::STATUS_PAUSED,
+						'last_error'     => (string) $reason,
+						'current_status' => (string) $reason,
+					] );
+				}
+				return self::update_state( [
+					'status'         => $blocked_status ?: self::STATUS_COOLDOWN,
+					'current_status' => (string) $reason,
+				] );
+			}
+
+			// Active running state
+			$queue = (array) ( $state['queue'] ?? [] );
+			if ( empty( $queue ) ) {
+				self::clear_cron();
+				return self::update_state( [
+					'status'         => self::STATUS_COMPLETED,
+					'completed_at'   => time(),
+					'current_status' => __( 'Hintergrund-Scan erfolgreich abgeschlossen! Alle Medien wurden analysiert.', 'ha-image-optimizer' ),
+				] );
+			}
+
+			// Pacing configuration
+			$batch_size = (int) $pacing['batch_size'];
+			$chunk      = array_splice( $queue, 0, $batch_size );
+
+			// Execute batch audit
+			@set_time_limit( 120 );
+			wp_raise_memory_limit( 'image' );
+
+			$prefetched = MediaAuditor::prefetch_batch_data( $chunk );
+			$fast_mode  = (bool) Settings::get( 'auditor_fast_mode', true );
+
+			$audited = [];
+			foreach ( $chunk as $id ) {
+				$id = absint( $id );
+				if ( $id > 0 ) {
+					$audited[] = MediaAuditor::audit_attachment( $id, $prefetched, $fast_mode );
+				}
+			}
+
+			if ( ! empty( $audited ) ) {
+				MediaAuditor::update_cached_results( $audited );
+			}
+
+			$processed   = (int) ( $state['processed'] ?? 0 ) + count( $chunk );
+			$total       = (int) ( $state['total'] ?? 0 );
+			$is_finished = empty( $queue );
+
+			$status_text = $is_finished
+				? __( 'Hintergrund-Scan erfolgreich abgeschlossen!', 'ha-image-optimizer' )
+				: sprintf(
+					/* translators: 1: processed count, 2: total count, 3: chunk IDs */
+					__( 'Geprüft: %1$d von %2$d Medien (IDs: %3$s)...', 'ha-image-optimizer' ),
+					$processed,
+					$total,
+					implode( ', ', $chunk )
+				);
+
+			$new_state = self::update_state( [
+				'status'         => $is_finished ? self::STATUS_COMPLETED : self::STATUS_RUNNING,
+				'queue'          => $queue,
+				'processed'      => $processed,
+				'completed_at'   => $is_finished ? time() : 0,
+				'current_status' => $status_text,
 			] );
-		}
 
-		// Active running state
-		$queue = (array) ( $state['queue'] ?? [] );
-		if ( empty( $queue ) ) {
-			self::clear_cron();
-			return self::update_state( [
-				'status'         => self::STATUS_COMPLETED,
-				'completed_at'   => time(),
-				'current_status' => __( 'Hintergrund-Scan erfolgreich abgeschlossen! Alle Medien wurden analysiert.', 'ha-image-optimizer' ),
-			] );
-		}
-
-		// Pacing configuration
-		$pacing     = MediaAuditor::get_pacing_config();
-		$batch_size = (int) $pacing['batch_size'];
-		$chunk      = array_splice( $queue, 0, $batch_size );
-
-		// Execute batch audit
-		@set_time_limit( 120 );
-		wp_raise_memory_limit( 'image' );
-
-		$prefetched = MediaAuditor::prefetch_batch_data( $chunk );
-		$fast_mode  = (bool) Settings::get( 'auditor_fast_mode', true );
-
-		$audited = [];
-		foreach ( $chunk as $id ) {
-			$id = absint( $id );
-			if ( $id > 0 ) {
-				$audited[] = MediaAuditor::audit_attachment( $id, $prefetched, $fast_mode );
+			if ( $is_finished ) {
+				self::clear_cron();
+			} else {
+				$should_chain = true;
+			}
+		} finally {
+			if ( function_exists( 'delete_transient' ) ) {
+				delete_transient( self::LOCK_TRANSIENT );
 			}
 		}
 
-		if ( ! empty( $audited ) ) {
-			MediaAuditor::update_cached_results( $audited );
-		}
-
-		$processed     = (int) ( $state['processed'] ?? 0 ) + count( $chunk );
-		$total         = (int) ( $state['total'] ?? 0 );
-		$is_finished   = empty( $queue );
-
-		$status_text = $is_finished
-			? __( 'Hintergrund-Scan erfolgreich abgeschlossen!', 'ha-image-optimizer' )
-			: sprintf(
-				/* translators: 1: processed count, 2: total count, 3: chunk IDs */
-				__( 'Geprüft: %1$d von %2$d Medien (IDs: %3$s)...', 'ha-image-optimizer' ),
-				$processed,
-				$total,
-				implode( ', ', $chunk )
-			);
-
-		$new_state = self::update_state( [
-			'status'         => $is_finished ? self::STATUS_COMPLETED : self::STATUS_RUNNING,
-			'queue'          => $queue,
-			'processed'      => $processed,
-			'completed_at'   => $is_finished ? time() : 0,
-			'current_status' => $status_text,
-		] );
-
-		if ( $is_finished ) {
-			self::clear_cron();
-		} else {
+		if ( $should_chain ) {
 			// Enforce micro-sleep pacing
 			if ( $pacing['sleep_ms'] > 0 ) {
 				usleep( $pacing['sleep_ms'] * 1000 );

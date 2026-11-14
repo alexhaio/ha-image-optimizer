@@ -592,7 +592,7 @@ namespace {
 				}
 				return [];
 			}
-			if ( str_contains( $query, 'meta_key NOT IN' ) && str_contains( $query, "meta_key NOT LIKE '_acf_%'" ) ) {
+			if ( str_contains( $query, 'meta_key NOT IN' ) && ( str_contains( $query, "meta_key NOT LIKE '\_acf\_%'" ) || str_contains( $query, "meta_key NOT LIKE '_acf_%'" ) ) ) {
 				if ( preg_match( '/\b25\b/', $query ) ) {
 					return [
 						(object) [ 'ID' => 55, 'post_title' => 'Landingpage', 'post_type' => 'page', 'meta_key' => 'custom_hero_image' ],
@@ -712,6 +712,10 @@ namespace {
 		public function prepare( $query, ...$args ) {
 			if ( empty( $args ) ) {
 				return $query;
+			}
+			// Catch unescaped '%' in SQL template (anything other than %s, %d, %f, %%)
+			if ( preg_match( '/%(?![sdf%])/', (string) $query, $bad ) ) {
+				throw new \InvalidArgumentException( 'Unescaped % specifier in prepare(): ' . $bad[0] . ' inside query: ' . $query );
 			}
 			if ( isset( $args[0] ) && is_array( $args[0] ) && 1 === count( $args ) ) {
 				$args = $args[0];
@@ -1034,6 +1038,25 @@ namespace HA_Image_Optimizer_Tests {
 			$alreadyPicture = '<picture><source srcset="existing.webp"><img src="https://example.com/wp-content/uploads/mock.jpg"></picture>';
 			$filteredPic = ContentFilter::filter_html( $alreadyPicture );
 			$this->assert( 1 === substr_count( $filteredPic, '<picture>' ) || 1 === substr_count( $filteredPic, '<picture' ), 'ContentFilter does not nest <picture> tags if <img> already wrapped' );
+
+			// Test URL resolution with query string, encoding, relative path, and inline style quotes + idempotency
+			$this->assert( str_contains( (string) ContentFilter::resolve_local_path( 'https://example.com/wp-content/uploads/mock.jpg?ver=123' ), 'mock.jpg' ), 'Resolved URL with query string' );
+			$this->assert( str_contains( (string) ContentFilter::resolve_local_path( '/wp-content/uploads/mock.jpg' ), 'mock.jpg' ), 'Resolved root-relative URL' );
+
+			$styleHtml  = '<div style="background-image: url(\'https://example.com/wp-content/uploads/mock.jpg?v=1\');">Hi</div>';
+			$styleOnce  = ContentFilter::filter_html( $styleHtml );
+			$styleTwice = ContentFilter::filter_html( $styleOnce );
+			$this->assert( str_contains( $styleOnce, 'image-set(' ), 'Converted inline background-image with single-quoted URL to image-set()' );
+			$this->assert( 1 === substr_count( $styleTwice, '-webkit-image-set(' ), 'ContentFilter does not duplicate -webkit-image-set() on double pass' );
+
+			// Test srcset omits variants without companion files (no .jpg inside image/webp source)
+			$srcsetHtml = '<img src="https://example.com/wp-content/uploads/mock.jpg" srcset="https://example.com/wp-content/uploads/mock.jpg 1200w, https://example.com/wp-content/uploads/missing-300x200.jpg 300w">';
+			$srcsetOut  = ContentFilter::filter_html( $srcsetHtml );
+			$this->assert( ! str_contains( $srcsetOut, '<source type="image/webp" srcset="https://example.com/wp-content/uploads/mock.jpg.webp 1200w, https://example.com/wp-content/uploads/missing-300x200.jpg' ), 'WebP <source> srcset omits non-WebP fallback entries' );
+
+			// Test <script> content is untouched
+			$scriptHtml = '<script>var x = "<img src=\'https://example.com/wp-content/uploads/mock.jpg\'>";</script>';
+			$this->assert( $scriptHtml === ContentFilter::filter_html( $scriptHtml ), 'ContentFilter preserves <script> contents' );
 
 			@unlink( $mockFile );
 			@unlink( $mockWebp );
@@ -1657,7 +1680,12 @@ namespace HA_Image_Optimizer_Tests {
 
 			Settings::update( [ 'auditor_pacing_mode' => 'standard' ] );
 			$safeguard = MediaAuditor::get_sql_safeguard_prefix();
-			$this->assert( str_contains( $safeguard, 'MAX_EXECUTION_TIME(2500)' ) && str_contains( $safeguard, 'SQL_NO_CACHE' ), 'SQL safeguard contains MAX_EXECUTION_TIME(2500) and SQL_NO_CACHE' );
+			$this->assert( str_contains( $safeguard, 'MAX_EXECUTION_TIME(2500)' ) && ! str_contains( $safeguard, 'SQL_NO_CACHE' ), 'SQL safeguard contains MAX_EXECUTION_TIME(2500) without deprecated SQL_NO_CACHE' );
+
+			// Test MEDIA_TRASH detection and CustomFolderProcessor restore traversal guard
+			$this->assert( ! MediaAuditor::is_media_trash_enabled(), 'MEDIA_TRASH correctly detected as disabled in default WP env' );
+			$this->assert( ! CustomFolderProcessor::restore_file( '../wp-config.php' ), 'CustomFolderProcessor::restore_file blocks directory traversal' );
+			$this->assert( null === \ha\ImageOptimizer\NextGen\WebpConverter::convert( __FILE__ ), 'WebpConverter ignores non-existing or .webp check cleanly' );
 
 			// 4. Background Auditor State Machine (start, pause, resume, cancel)
 			Settings::update( [

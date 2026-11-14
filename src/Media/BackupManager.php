@@ -102,6 +102,42 @@ class BackupManager {
 	}
 
 	/**
+	 * Resolve origin backup record when an attachment was format-converted (e.g. PNG to JPEG).
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return array{target_file: string, backup_path: string, mime: string}|null
+	 */
+	private static function get_origin_record( int $attachment_id ): ?array {
+		$origin = get_post_meta( $attachment_id, '_ha_io_backup_origin', true );
+		if ( ! is_array( $origin ) || empty( $origin['mime'] ) ) {
+			return null;
+		}
+
+		$target_file = '';
+		if ( ! empty( $origin['rel_file'] ) && function_exists( 'wp_upload_dir' ) ) {
+			$upload_dir  = wp_upload_dir();
+			$target_file = trailingslashit( $upload_dir['basedir'] ) . ltrim( (string) $origin['rel_file'], '/\\' );
+		} elseif ( ! empty( $origin['abs_file'] ) ) {
+			$target_file = (string) $origin['abs_file'];
+		}
+
+		if ( '' === $target_file ) {
+			return null;
+		}
+
+		$backup_path = self::get_backup_file_path( $attachment_id, $target_file );
+		if ( ! file_exists( $backup_path ) ) {
+			return null;
+		}
+
+		return [
+			'target_file' => $target_file,
+			'backup_path' => $backup_path,
+			'mime'        => (string) $origin['mime'],
+		];
+	}
+
+	/**
 	 * Check if an attachment has a stored backup.
 	 *
 	 * @param int $attachment_id Attachment ID.
@@ -114,7 +150,85 @@ class BackupManager {
 		}
 
 		$backup_path = self::get_backup_file_path( $attachment_id, $file );
-		return file_exists( $backup_path );
+		if ( file_exists( $backup_path ) ) {
+			return true;
+		}
+
+		return null !== self::get_origin_record( $attachment_id );
+	}
+
+	/**
+	 * Restore pristine master file without deleting the backup (for forced re-optimization).
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return string|null Restored master file path, or null if no backup exists.
+	 */
+	public static function restore_master_for_reoptimize( int $attachment_id ): ?string {
+		$current_file = get_attached_file( $attachment_id );
+		if ( ! $current_file ) {
+			return null;
+		}
+
+		$origin      = self::get_origin_record( $attachment_id );
+		$target_file = $origin ? $origin['target_file'] : $current_file;
+		$backup_path = $origin ? $origin['backup_path'] : self::get_backup_file_path( $attachment_id, $current_file );
+
+		if ( ! file_exists( $backup_path ) ) {
+			return null;
+		}
+
+		self::clean_nextgen_files( $attachment_id );
+
+		// If attachment was converted (e.g. PNG -> JPG), remove derived file & its subsizes before copying original back
+		if ( $origin && $target_file !== $current_file ) {
+			self::delete_subsizes_files( $attachment_id, $current_file );
+			if ( file_exists( $current_file ) ) {
+				@unlink( $current_file );
+			}
+		}
+
+		if ( ! @copy( $backup_path, $target_file ) ) {
+			return null;
+		}
+
+		if ( $origin && $target_file !== $current_file ) {
+			if ( function_exists( 'update_attached_file' ) ) {
+				update_attached_file( $attachment_id, $target_file );
+			}
+			if ( function_exists( 'wp_update_post' ) ) {
+				wp_update_post( [
+					'ID'             => $attachment_id,
+					'post_mime_type' => $origin['mime'],
+				] );
+			}
+			delete_post_meta( $attachment_id, '_ha_io_backup_origin' );
+		}
+
+		return $target_file;
+	}
+
+	/**
+	 * Delete generated intermediate sub-size image files for an attachment.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $master_file   Master file path to locate directory.
+	 * @return void
+	 */
+	private static function delete_subsizes_files( int $attachment_id, string $master_file ): void {
+		$meta = wp_get_attachment_metadata( $attachment_id );
+		if ( empty( $meta['sizes'] ) || ! is_array( $meta['sizes'] ) ) {
+			return;
+		}
+
+		$base_dir = dirname( $master_file );
+		foreach ( $meta['sizes'] as $size ) {
+			if ( ! empty( $size['file'] ) ) {
+				$sub_path = trailingslashit( $base_dir ) . $size['file'];
+				if ( file_exists( $sub_path ) && $sub_path !== $master_file ) {
+					@unlink( $sub_path );
+				}
+			}
+		}
 	}
 
 	/**
@@ -124,30 +238,54 @@ class BackupManager {
 	 * @return bool True on success.
 	 */
 	public static function restore( int $attachment_id ): bool {
-		$file = get_attached_file( $attachment_id );
-		if ( ! $file ) {
+		$current_file = get_attached_file( $attachment_id );
+		if ( ! $current_file ) {
 			return false;
 		}
 
-		$backup_path = self::get_backup_file_path( $attachment_id, $file );
+		$origin      = self::get_origin_record( $attachment_id );
+		$target_file = $origin ? $origin['target_file'] : $current_file;
+		$backup_path = $origin ? $origin['backup_path'] : self::get_backup_file_path( $attachment_id, $current_file );
+
 		if ( ! file_exists( $backup_path ) ) {
 			return false;
 		}
 
-		// 1. Copy backup back to original location
-		if ( ! @copy( $backup_path, $file ) ) {
+		// 1. Remove all generated .webp and .avif files first (using current attachment file/meta)
+		self::clean_nextgen_files( $attachment_id );
+
+		// If converted from another format (e.g. PNG -> JPEG), delete derived file & its subsizes and switch back
+		if ( $origin && $target_file !== $current_file ) {
+			self::delete_subsizes_files( $attachment_id, $current_file );
+			if ( file_exists( $current_file ) ) {
+				@unlink( $current_file );
+			}
+		}
+
+		// 2. Copy backup back to original location
+		if ( ! @copy( $backup_path, $target_file ) ) {
 			return false;
 		}
 
-		// 2. Remove all generated .webp and .avif files
-		self::clean_nextgen_files( $attachment_id );
+		if ( $origin && $target_file !== $current_file ) {
+			if ( function_exists( 'update_attached_file' ) ) {
+				update_attached_file( $attachment_id, $target_file );
+			}
+			if ( function_exists( 'wp_update_post' ) ) {
+				wp_update_post( [
+					'ID'             => $attachment_id,
+					'post_mime_type' => $origin['mime'],
+				] );
+			}
+			delete_post_meta( $attachment_id, '_ha_io_backup_origin' );
+		}
 
 		// 3. Regenerate thumbnails from restored master
 		if ( ! function_exists( 'wp_generate_attachment_metadata' ) && defined( 'ABSPATH' ) && file_exists( ABSPATH . 'wp-admin/includes/image.php' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 		if ( function_exists( 'wp_generate_attachment_metadata' ) ) {
-			$metadata = wp_generate_attachment_metadata( $attachment_id, $file );
+			$metadata = wp_generate_attachment_metadata( $attachment_id, $target_file );
 			wp_update_attachment_metadata( $attachment_id, $metadata );
 		}
 

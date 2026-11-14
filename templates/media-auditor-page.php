@@ -137,7 +137,7 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 
 					<!-- Background Action Buttons -->
 					<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-						<button type="button" class="button button-primary" id="ha-io-btn-bg-start" <?php disabled( $bg_is_active ); ?>>
+						<button type="button" class="button button-primary" id="ha-io-btn-bg-start" data-state="<?php echo esc_attr( $bg_status ); ?>" <?php disabled( $bg_is_active ); ?>>
 							▶️ <span id="ha-io-btn-bg-start-text"><?php echo $bg_is_paused ? esc_html__( 'Hintergrund-Scan fortsetzen', 'ha-image-optimizer' ) : esc_html__( 'Hintergrund-Scan starten', 'ha-image-optimizer' ); ?></span>
 						</button>
 						<button type="button" class="button button-secondary" id="ha-io-btn-bg-pause" <?php disabled( ! $bg_is_active ); ?>>
@@ -243,8 +243,9 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 			<!-- Search & Bulk Actions -->
 			<div style="display: flex; gap: 8px; align-items: center;">
 				<input type="search" id="ha-io-audit-search" placeholder="<?php esc_attr_e( 'Nach Datei oder Beitrag suchen...', 'ha-image-optimizer' ); ?>" style="min-width: 240px;">
+				<?php $trash_enabled = \ha\ImageOptimizer\Auditor\MediaAuditor::is_media_trash_enabled(); ?>
 				<button type="button" class="button button-secondary" id="ha-io-btn-bulk-trash" style="color: #cf222e;" disabled>
-					🗑️ <?php esc_html_e( 'Ausgewählte in Papierkorb', 'ha-image-optimizer' ); ?>
+					<?php echo $trash_enabled ? '🗑️ ' . esc_html__( 'Ausgewählte in Papierkorb', 'ha-image-optimizer' ) : '🗑️ ' . esc_html__( 'Ausgewählte löschen (Backup)', 'ha-image-optimizer' ); ?>
 				</button>
 			</div>
 		</div>
@@ -368,8 +369,9 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 							</td>
 							<td style="text-align: right;">
 								<?php if ( 'used' !== $status ) : ?>
+									<?php $trash_supported = \ha\ImageOptimizer\Auditor\MediaAuditor::is_media_trash_enabled(); ?>
 									<button type="button" class="button button-small button-link-delete ha-io-btn-trash-single" data-id="<?php echo esc_attr( $item['id'] ); ?>">
-										🗑️ <?php esc_html_e( 'Papierkorb', 'ha-image-optimizer' ); ?>
+										<?php echo $trash_supported ? '🗑️ ' . esc_html__( 'Papierkorb', 'ha-image-optimizer' ) : '🗑️ ' . esc_html__( 'Löschen (Backup)', 'ha-image-optimizer' ); ?>
 									</button>
 								<?php else : ?>
 									<a href="<?php echo esc_url( admin_url( 'post.php?post=' . (int) $item['id'] . '&action=edit' ) ); ?>" class="button button-small" target="_blank">

@@ -40,7 +40,15 @@
 				},
 				success: function (res) {
 					if (res.success) {
-						location.reload();
+						const inPostEditor = $('#post').length > 0 || $('body').hasClass('block-editor-page');
+						if (inPostEditor) {
+							$btn.text('✓ ' + (ha_io_vars.i18n.completed || 'Optimiert'));
+							if (res.data && res.data.data && res.data.data.total && typeof res.data.data.total.percent !== 'undefined') {
+								$btn.closest('td, .compat-field-ha_io_stats').find('.ha-io-status-badge').text(res.data.data.total.percent + '% ' + (ha_io_vars.i18n.saved || 'gespart'));
+							}
+						} else {
+							location.reload();
+						}
 					} else {
 						alert(res.data.message || ha_io_vars.i18n.error);
 						$btn.prop('disabled', false).text(origText);
@@ -76,7 +84,12 @@
 				},
 				success: function (res) {
 					if (res.success) {
-						location.reload();
+						const inPostEditor = $('#post').length > 0 || $('body').hasClass('block-editor-page');
+						if (inPostEditor) {
+							$btn.text('✓ ' + ((res.data && res.data.message) || 'Original'));
+						} else {
+							location.reload();
+						}
 					} else {
 						alert(res.data.message || ha_io_vars.i18n.error);
 						$btn.prop('disabled', false).text(origText);
@@ -276,6 +289,13 @@
 						}
 
 						appendLog('Batch abgeschlossen (' + chunk.length + ' ' + labelType + '). Gespart: ' + formatBytes(saved));
+
+						if (res.data.errors && res.data.errors.length) {
+							res.data.errors.forEach(function (err) {
+								const errTarget = err.id ? ('ID ' + err.id) : (err.file || '?');
+								appendLog('⚠️ Fehler bei ' + errTarget + ': ' + (err.message || 'Unbekannt'));
+							});
+						}
 					} else {
 						appendLog('Fehler bei Batch (' + chunk.join(',') + '): ' + (res.data ? res.data.message : 'Unbekannt'));
 						bulkProcessed += chunk.length;
@@ -345,7 +365,7 @@
 			setStep(4);
 
 			$('#ha-io-btn-pause-bulk').hide();
-			$('#ha-io-btn-start-bulk, #ha-io-btn-start-bulk-all, #ha-io-btn-start-custom').prop('disabled', false);
+			$('#ha-io-btn-start-bulk, #ha-io-btn-start-bulk-all').prop('disabled', false);
 			$('#ha-io-progress-bar').css('width', '100%');
 			$('#ha-io-current-action-title').text('🎉 ' + (ha_io_vars.i18n.completed || 'Optimierung vollständig abgeschlossen!'));
 			$('#ha-io-current-action-desc').text('Insgesamt wurden ' + formatBytes(totalSavedBytes) + ' Speicherplatz auf dem Server gespart. Alle Caches wurden bereinigt.');
@@ -372,6 +392,13 @@
 
 						if (s.unoptimized === 0) {
 							$('#ha-io-btn-start-bulk').prop('disabled', true);
+						}
+					}
+					if (res.success && res.data && res.data.custom_stats) {
+						const cs = res.data.custom_stats;
+						const $customBtn = $('#ha-io-btn-start-custom');
+						if ($customBtn.length) {
+							$customBtn.prop('disabled', cs.unoptimized === 0);
 						}
 					}
 				}

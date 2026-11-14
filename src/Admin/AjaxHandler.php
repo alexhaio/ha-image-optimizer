@@ -367,10 +367,11 @@ class AjaxHandler {
 			wp_send_json_error( [ 'message' => esc_html__( 'Ungültige Bild-ID.', 'ha-image-optimizer' ) ], 400 );
 		}
 
+		$will_permanently_delete = $force || ! MediaAuditor::is_media_trash_enabled();
 		if ( MediaAuditor::trash_attachment( $id, $force ) ) {
 			wp_send_json_success( [
-				'message' => $force
-					? esc_html__( 'Bild dauerhaft gelöscht.', 'ha-image-optimizer' )
+				'message' => $will_permanently_delete
+					? esc_html__( 'Bild dauerhaft gelöscht (Backup angelegt).', 'ha-image-optimizer' )
 					: esc_html__( 'Bild in den Papierkorb verschoben.', 'ha-image-optimizer' ),
 				'id'      => $id,
 			] );

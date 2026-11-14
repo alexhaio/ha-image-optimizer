@@ -5,7 +5,7 @@ Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.0.1
+Stable tag: 2.1.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,15 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 2.1.0 =
+* Fix (Sicherheit & Datenverlust): `MediaAuditor::trash_attachment()` legt nun auch bei deaktiviertem `MEDIA_TRASH` zwingend ein Backup vor dem endgültigen Löschen an; UI und WP-CLI weisen transparent auf den aktiven Löschmodus hin.
+* Fix (Backup & Restore): Konvertierte PNG-zu-JPEG-Dateien behalten über `_ha_io_backup_origin` ihre Original-Referenz, sodass `BackupManager::restore()` und erneute Optimierungen sauber das ursprüngliche PNG wiederherstellen und alte Thumbnails bereinigen.
+* Fix (SQL & Kompatibilität): Unmaskierte `%`-Wildcards in mehreren `$wpdb->prepare()`-Abfragen des `MediaAuditor` über `$wpdb->esc_like()` behoben, veraltetes `SQL_NO_CACHE` (MySQL 8.4+ Syntaxfehler) entfernt und SQLite/MariaDB-Erkennung für Query-Hints ergänzt.
+* Fix (i18n & Concurrency): Sprachabhängige String-Prüfungen im Hintergrund-Auditor (`'fortsetzen'`, `'Nacht'`) durch sprachunabhängige Status-Codes und `data-state`-Attribute ersetzt sowie einen Worker-Lock gegen parallele Cron/Async-Läufe ergänzt.
+* Fix (Engines): `ImagickDriver::auto_orient()` verhindert verdrehte Hochformatfotos vor `stripImage()`; Multi-Frame-WebP-Export (`writeImages`) für animierte GIFs ergänzt; `GdDriver` wandelt Palette-PNGs vor `imagewebp`/`imageavif` in TrueColor um.
+* Fix (Next-Gen & Delivery): `.webp.webp`-/`.avif.avif`-Doppelkonvertierungen unterbunden; `ContentFilter` unterstützt nun Query-Strings, relative URLs, URL-Encoding, gequotete Inline-Styles, saubere `<source>`-`srcset`-Filterung, `<script>`-Schutz und doppelte `image-set()`-Idempotenz beim Full-Buffer-Parsing.
+* Fix (Custom Folders, Bulk & Uninstall): Symlink-sicheres Pfad-Scanning, echte Qualitätseinstellungen und korrekte `SizeGuard`-Auswertung in `CustomFolderProcessor`; Batch-Streaming in `ProgressTracker::get_stats()`; Traversal-Check in `restore_file()`; `wp_unslash()` beim Speichern; `--batch-size`-Schutz in WP-CLI; und Bereinigung generierter WebP/AVIF-Begleitdateien in `uninstall.php`.
 
 = 2.0.1 =
 * Fix: Behebung eines Fatal Errors in `CustomFolderProcessor` durch Aufruf von `maybe_downscale()`.

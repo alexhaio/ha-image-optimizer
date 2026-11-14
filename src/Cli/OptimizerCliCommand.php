@@ -130,7 +130,7 @@ class OptimizerCliCommand {
 
 		$all        = ! empty( $assoc_args['all'] );
 		$force      = ! empty( $assoc_args['force'] ) || $all;
-		$batch_size = isset( $assoc_args['batch-size'] ) ? absint( $assoc_args['batch-size'] ) : 25;
+		$batch_size = isset( $assoc_args['batch-size'] ) ? max( 1, absint( $assoc_args['batch-size'] ) ) : 25;
 
 		WP_CLI::log( 'Ermittle zu optimierende Bilder...' );
 
@@ -238,7 +238,7 @@ class OptimizerCliCommand {
 	public function optimize_custom( array $args, array $assoc_args ): void {
 		$all        = ! empty( $assoc_args['all'] );
 		$force      = ! empty( $assoc_args['force'] ) || $all;
-		$batch_size = isset( $assoc_args['batch-size'] ) ? absint( $assoc_args['batch-size'] ) : 25;
+		$batch_size = isset( $assoc_args['batch-size'] ) ? max( 1, absint( $assoc_args['batch-size'] ) ) : 25;
 
 		WP_CLI::log( 'Ermittle zu optimierende Theme- und Custom-Dateien...' );
 
@@ -566,18 +566,24 @@ class OptimizerCliCommand {
 			WP_CLI::confirm( sprintf( 'Möchtest du %d verwaiste Medien jetzt %s?', count( $orphans ), $action_desc ) );
 		}
 
-		$progress = \WP_CLI\Utils\make_progress_bar( 'Bereinige Medien', count( $orphans ) );
-		$cleaned = 0;
+		$progress    = \WP_CLI\Utils\make_progress_bar( 'Bereinige Medien', count( $orphans ) );
+		$cleaned     = 0;
+		$freed_bytes = 0;
 
 		foreach ( $orphans as $orphan ) {
 			if ( MediaAuditor::trash_attachment( $orphan['id'], $force ) ) {
 				$cleaned++;
+				$freed_bytes += (int) ( $orphan['disk_bytes'] ?? 0 );
 			}
 			$progress->tick();
 		}
 		$progress->finish();
 
-		WP_CLI::success( sprintf( '%d verwaiste Medien erfolgreich bereinigt! %s Speicherplatz freigegeben.', $cleaned, SizeGuard::format_size( $total_bytes, 1 ) ) );
+		if ( $force || ! MediaAuditor::is_media_trash_enabled() ) {
+			WP_CLI::success( sprintf( '%d verwaiste Medien erfolgreich bereinigt! %s Speicherplatz freigegeben.', $cleaned, SizeGuard::format_size( $freed_bytes, 1 ) ) );
+		} else {
+			WP_CLI::success( sprintf( '%d verwaiste Medien in den Papierkorb verschoben (%s belegt).', $cleaned, SizeGuard::format_size( $freed_bytes, 1 ) ) );
+		}
 	}
 }
 
