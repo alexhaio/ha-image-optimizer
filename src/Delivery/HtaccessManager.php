@@ -100,7 +100,8 @@ class HtaccessManager {
 		$clean   = (string) preg_replace( $pattern, '', $current );
 
 		if ( trim( $clean ) === '' ) {
-			return @unlink( $path );
+			wp_delete_file( $path );
+			return ! file_exists( $path );
 		}
 
 		return (bool) @file_put_contents( $path, $clean );

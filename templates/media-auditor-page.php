@@ -54,7 +54,10 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 		<?php $cur_safety = (int) \ha\ImageOptimizer\Common\Settings::get( 'auditor_safety_buffer_days', 0 ); ?>
 		<?php if ( $cur_safety > 0 ) : ?>
 			<span style="background: #dafbe1; color: #1a7f37; padding: 4px 10px; border-radius: 12px; font-weight: 500;">
-				🛡️ <?php printf( esc_html__( 'Schutzfrist für neue Uploads: %d Tage', 'ha-image-optimizer' ), $cur_safety ); ?>
+				🛡️ <?php
+				/* translators: %d: number of protection days for new uploads */
+				printf( esc_html__( 'Schutzfrist für neue Uploads: %d Tage', 'ha-image-optimizer' ), absint( $cur_safety ) );
+				?>
 			</span>
 		<?php endif; ?>
 		<a href="<?php echo esc_url( admin_url( 'options-general.php?page=ha-image-optimizer#ha-io-auditor-settings' ) ); ?>" style="text-decoration: underline; color: #666;">
@@ -67,7 +70,10 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 		<div class="ha-io-stat-box">
 			<span class="ha-io-stat-number" id="ha-io-audit-stat-total"><?php echo esc_html( $counts['total'] ); ?></span>
 			<span class="ha-io-stat-label"><?php esc_html_e( 'Gescannte Medien', 'ha-image-optimizer' ); ?></span>
-			<small style="color: #666; font-size: 11px;"><?php printf( esc_html__( 'Letzter Scan: %s', 'ha-image-optimizer' ), esc_html( $last_scan ) ); ?></small>
+			<small style="color: #666; font-size: 11px;"><?php
+			/* translators: %s: formatted date/time of the last media audit scan */
+			printf( esc_html__( 'Letzter Scan: %s', 'ha-image-optimizer' ), esc_html( $last_scan ) );
+			?></small>
 		</div>
 
 		<div class="ha-io-stat-box ha-io-stat-box-red">
@@ -124,6 +130,7 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 							<?php
 							if ( $night_enabled ) {
 								printf(
+									/* translators: 1: night window start time, 2: night window end time */
 									esc_html__( 'Läuft schonend in Teilschritten im Server-Hintergrund – bevorzugt im Nachtfenster (%1$s – %2$s Uhr). Du kannst dieses Browserfenster jederzeit schließen.', 'ha-image-optimizer' ),
 									esc_html( $night_start ),
 									esc_html( $night_end )
@@ -178,7 +185,7 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 				$btn_icon   = $has_cached ? '▶️' : '🔍';
 				?>
 				<button type="button" class="button button-primary button-hero" id="ha-io-btn-start-audit">
-					<span id="ha-io-btn-audit-icon"><?php echo $btn_icon; ?></span>
+					<span id="ha-io-btn-audit-icon"><?php echo esc_html( $btn_icon ); ?></span>
 					<span id="ha-io-btn-audit-text"><?php echo esc_html( $btn_label ); ?></span>
 				</button>
 				<?php if ( ! empty( $counts['total'] ) ) : ?>
@@ -350,8 +357,8 @@ $last_scan   = ! empty( $audit_data['last_scan'] ) ? date_i18n( 'd.m.Y H:i', (in
 										<?php
 										$p_url = ! empty( $item['parent_url'] ) ? $item['parent_url'] : admin_url( 'post.php?post=' . (int) $item['parent_id'] . '&action=edit' );
 										printf(
-											/* translators: 1: edit URL, 2: parent post title, 3: parent post ID */
 											wp_kses(
+												/* translators: 1: edit URL, 2: parent post title, 3: parent post ID */
 												__( 'Zugeordnet zu: <a href="%1$s" target="_blank" style="color: #0969da; text-decoration: underline; font-weight: 500;">"%2$s" (#%3$d) ↗</a>, aber im Text oder Beitragsbild nicht auffindbar.', 'ha-image-optimizer' ),
 												[ 'a' => [ 'href' => [], 'target' => [], 'style' => [] ] ]
 											),

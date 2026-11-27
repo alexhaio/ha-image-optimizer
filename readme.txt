@@ -5,7 +5,7 @@ Tags: image optimizer, webp, avif, compression, performance, media library
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,11 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 2.1.1 =
+* Fix (Admin-Einstellungen): Behebung eines PHP Fatal Errors (`Class "MediaAuditor" not found`) in `templates/admin-settings.php` durch vollständig qualifizierten Namespace-Aufruf.
+* Fix (WordPress Plugin Check & Best Practices): Output-Escaping in `templates/media-auditor-page.php` vervollständigt (`esc_html()`, `absint()`), `/* translators: */`-Kommentare und geordnete Platzhalter (`%1$s`, `%2$d`, `%3$s`) ergänzt, `wp_parse_url()` statt `parse_url()`, `wp_delete_file()` statt `unlink()`, `gmdate()`/`wp_date()` statt `date()`, sowie direktes `wp_unslash()` + Sanitization für Eingabevariablen in `Environment` und `AjaxHandler` umgesetzt.
+* Fix (i18n): Umstellung von `load_plugin_textdomain()` auf den modernen `lang_dir_for_domain`-Filter in `Plugin.php`.
 
 = 2.1.0 =
 * Fix (Sicherheit & Datenverlust): `MediaAuditor::trash_attachment()` legt nun auch bei deaktiviertem `MEDIA_TRASH` zwingend ein Backup vor dem endgültigen Löschen an; UI und WP-CLI weisen transparent auf den aktiven Löschmodus hin.

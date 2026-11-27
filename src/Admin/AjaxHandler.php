@@ -237,7 +237,7 @@ class AjaxHandler {
 		@set_time_limit( 120 );
 		wp_raise_memory_limit( 'image' );
 
-		$files = isset( $_POST['files'] ) ? (array) $_POST['files'] : [];
+		$files = isset( $_POST['files'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['files'] ) ) : [];
 		$force = ! empty( $_POST['force'] );
 
 		if ( empty( $files ) ) {
@@ -260,7 +260,7 @@ class AjaxHandler {
 			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
 		}
 
-		$file = isset( $_POST['file'] ) ? sanitize_text_field( (string) $_POST['file'] ) : '';
+		$file = isset( $_POST['file'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['file'] ) ) : '';
 		if ( empty( $file ) ) {
 			wp_send_json_error( [ 'message' => esc_html__( 'Keine Datei angegeben.', 'ha-image-optimizer' ) ], 400 );
 		}
@@ -291,7 +291,7 @@ class AjaxHandler {
 		$skip_scanned = ! empty( $_POST['skip_scanned'] );
 		$reset_cache  = ! empty( $_POST['reset_cache'] );
 
-		if ( $reset_cache || ( ! $skip_scanned && isset( $_POST['reset_cache'] ) && '1' === (string) $_POST['reset_cache'] ) ) {
+		if ( $reset_cache ) {
 			MediaAuditor::clear_results();
 		}
 

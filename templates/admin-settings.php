@@ -32,7 +32,7 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 
 	<h1>⚡ <?php esc_html_e( 'HA Image Optimizer: Einstellungen & System-Status', 'ha-image-optimizer' ); ?></h1>
 
-	<?php if ( isset( $_GET['updated'] ) ) : ?>
+	<?php if ( isset( $_GET['updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Displays save confirmation notice after wp_safe_redirect(). ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Einstellungen wurden erfolgreich gespeichert.', 'ha-image-optimizer' ); ?></p>
 		</div>
@@ -368,7 +368,10 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 							<input type="time" name="ha_io_settings[auditor_night_start]" value="<?php echo esc_attr( $settings['auditor_night_start'] ?? '02:00' ); ?>" style="width: 100px;">
 							<span><?php esc_html_e( 'bis:', 'ha-image-optimizer' ); ?></span>
 							<input type="time" name="ha_io_settings[auditor_night_end]" value="<?php echo esc_attr( $settings['auditor_night_end'] ?? '06:00' ); ?>" style="width: 100px;">
-							<span style="color: #666; font-size: 12px;">(<?php printf( esc_html__( 'Aktuelle Serverzeit: %s Uhr', 'ha-image-optimizer' ), esc_html( function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : date( 'H:i' ) ) ); ?>)</span>
+							<span style="color: #666; font-size: 12px;">(<?php
+								/* translators: %s: current server time in HH:MM format */
+								printf( esc_html__( 'Aktuelle Serverzeit: %s Uhr', 'ha-image-optimizer' ), esc_html( function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : gmdate( 'H:i' ) ) );
+							?>)</span>
 						</div>
 						<p class="description">
 							<?php esc_html_e( 'Außerhalb dieses Fensters pausiert der Hintergrund-Scan automatisch und wartet auf die verkehrsarmen Nachtstunden. Schützt Live-Besucher zu 100 % vor Datenbanklast.', 'ha-image-optimizer' ); ?>
@@ -405,11 +408,14 @@ $delete_data_on_uninstall = (bool) get_option( 'ha_io_delete_data_on_uninstall',
 							<?php esc_html_e( 'Maximaler Load-Average (1 Min.)', 'ha-image-optimizer' ); ?>
 						</label>
 						<?php
-						$current_load = MediaAuditor::get_server_load();
+						$current_load = \ha\ImageOptimizer\Auditor\MediaAuditor::get_server_load();
 						if ( null !== $current_load ) :
 						?>
 							<span style="color: #666; font-size: 12px; margin-left: 8px;">
-								(<?php printf( esc_html__( 'Aktueller Server-Load: %s', 'ha-image-optimizer' ), number_format( $current_load, 2 ) ); ?>)
+								(<?php
+									/* translators: %s: current 1-minute server load average */
+									printf( esc_html__( 'Aktueller Server-Load: %s', 'ha-image-optimizer' ), esc_html( number_format( $current_load, 2 ) ) );
+								?>)
 							</span>
 						<?php endif; ?>
 						<p class="description">

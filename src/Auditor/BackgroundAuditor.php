@@ -135,7 +135,7 @@ class BackgroundAuditor {
 		$start = (string) Settings::get( 'auditor_night_start', '02:00' );
 		$end   = (string) Settings::get( 'auditor_night_end', '06:00' );
 
-		$now = $custom_time ?? ( function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : date( 'H:i' ) );
+		$now = $custom_time ?? ( function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : gmdate( 'H:i' ) );
 
 		if ( $start === $end ) {
 			return true;
@@ -178,7 +178,7 @@ class BackgroundAuditor {
 		if ( $is_night_mode && ! self::is_night_time() ) {
 			$start   = (string) Settings::get( 'auditor_night_start', '02:00' );
 			$end     = (string) Settings::get( 'auditor_night_end', '06:00' );
-			$current = function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : date( 'H:i' );
+			$current = function_exists( 'wp_date' ) ? wp_date( 'H:i' ) : gmdate( 'H:i' );
 
 			$reason = sprintf(
 				/* translators: 1: start time, 2: end time, 3: current server time */
@@ -242,7 +242,11 @@ class BackgroundAuditor {
 			: ( $blocked_status ?: self::STATUS_COOLDOWN );
 
 		$status_msg = $can_run
-			? sprintf( __( 'Hintergrund-Scan gestartet (%d Medien in der Queue)...', 'ha-image-optimizer' ), $total )
+			? sprintf(
+				/* translators: %d: number of media items queued */
+				__( 'Hintergrund-Scan gestartet (%d Medien in der Queue)...', 'ha-image-optimizer' ),
+				$total
+			)
 			: (string) $reason;
 
 		$state = self::update_state( [

@@ -51,7 +51,7 @@ class Plugin {
 	 * Constructor.
 	 */
 	private function __construct() {
-		add_action( 'plugins_loaded', [ $this, 'load_textdomain' ] );
+		add_filter( 'lang_dir_for_domain', [ $this, 'filter_lang_dir_for_domain' ], 10, 2 );
 		add_action( 'init', [ $this, 'init' ] );
 
 		// Hook media generation pipeline
@@ -73,16 +73,17 @@ class Plugin {
 	}
 
 	/**
-	 * Load plugin translations.
+	 * Point WordPress JIT translation loader to the bundled languages directory.
 	 *
-	 * @return void
+	 * @param string|false $path   Path to language directory.
+	 * @param string       $domain Text domain.
+	 * @return string|false
 	 */
-	public function load_textdomain(): void {
-		load_plugin_textdomain(
-			'ha-image-optimizer',
-			false,
-			dirname( HA_IO_BASENAME ) . '/languages'
-		);
+	public function filter_lang_dir_for_domain( $path, string $domain ) {
+		if ( 'ha-image-optimizer' === $domain ) {
+			return HA_IO_PATH . 'languages/';
+		}
+		return $path;
 	}
 
 	/**

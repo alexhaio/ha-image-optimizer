@@ -191,7 +191,9 @@ class MediaAuditor {
 
 				$default_ref = [
 					'label' => $is_gallery
+						/* translators: 1: post title, 2: post ID, 3: post type label */
 						? sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label )
+						/* translators: 1: post title, 2: post ID, 3: post type label */
 						: sprintf( __( 'Eingebunden im Inhalt von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 					'url'   => $edit_url,
 				];
@@ -223,6 +225,7 @@ class MediaAuditor {
 						foreach ( $ids as $g_id ) {
 							if ( $g_id > 0 ) {
 								$by_id[ $g_id ][] = [
+									/* translators: 1: post title, 2: post ID, 3: post type label */
 									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 									'url'   => $edit_url,
 								];
@@ -238,6 +241,7 @@ class MediaAuditor {
 						foreach ( $ids as $g_id ) {
 							if ( $g_id > 0 ) {
 								$by_id[ $g_id ][] = [
+									/* translators: 1: post title, 2: post ID, 3: post type label */
 									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 									'url'   => $edit_url,
 								];
@@ -306,6 +310,7 @@ class MediaAuditor {
 				}
 
 				$builder_ref = [
+					/* translators: 1: page builder name, 2: post title, 3: post ID */
 					'label' => sprintf( __( '%1$s in "%2$s" (#%3$d)', 'ha-image-optimizer' ), $builder_name, $title, $post_id ),
 					'url'   => self::safe_admin_url( 'post.php?post=' . $post_id . '&action=edit' ),
 				];
@@ -606,7 +611,9 @@ class MediaAuditor {
 					$is_widget    = str_starts_with( $opt_name, 'widget_' );
 					$found_refs[] = [
 						'label' => $is_widget
+							/* translators: %s: WordPress widget option name */
 							? sprintf( __( 'WordPress Widget ("%s")', 'ha-image-optimizer' ), $opt_name )
+							/* translators: %s: WordPress option name */
 							: sprintf( __( 'WordPress Option ("%s")', 'ha-image-optimizer' ), $opt_name ),
 						'url'   => $is_widget ? self::safe_admin_url( 'widgets.php' ) : self::safe_admin_url( 'options-general.php' ),
 					];
@@ -2044,7 +2051,9 @@ class MediaAuditor {
 					$opt_name  = (string) ( $orow->option_name ?? '' );
 					$is_widget = str_starts_with( $opt_name, 'widget_' );
 					$label     = $is_widget
+						/* translators: %s: WordPress widget option name */
 						? sprintf( __( 'WordPress Widget ("%s")', 'ha-image-optimizer' ), $opt_name )
+						/* translators: %s: WordPress option name */
 						: sprintf( __( 'WordPress Option ("%s")', 'ha-image-optimizer' ), $opt_name );
 					$url       = $is_widget ? self::safe_admin_url( 'widgets.php' ) : self::safe_admin_url( 'options-general.php' );
 
@@ -2358,6 +2367,7 @@ class MediaAuditor {
 			}
 
 			$clean_name = str_replace( $prefix, '', $table );
+			/* translators: %s: database table name without prefix */
 			$label      = sprintf( __( 'Tabelle "%s"', 'ha-image-optimizer' ), $clean_name );
 
 			$discovered[ $table ] = [

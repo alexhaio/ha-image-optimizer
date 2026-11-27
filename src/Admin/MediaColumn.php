@@ -90,7 +90,16 @@ class MediaColumn {
 				<div class="ha-io-status-row">
 					<span class="ha-io-badge ha-io-badge-gray"><?php esc_html_e( 'Unoptimiert', 'ha-image-optimizer' ); ?></span>
 					<?php if ( $total_unopt > 0 ) : ?>
-						<span class="ha-io-filesize-tag" title="<?php echo esc_attr( sprintf( __( 'Original: %s, Gesamt inkl. %d Zwischengrößen: %s', 'ha-image-optimizer' ), SizeGuard::format_size( $file_size, 1 ), $sizes_count, SizeGuard::format_size( $total_unopt, 1 ) ) ); ?>">
+						<?php
+						$unopt_title = sprintf(
+							/* translators: 1: original file size, 2: number of intermediate sizes, 3: total file size */
+							__( 'Original: %1$s, Gesamt inkl. %2$d Zwischengrößen: %3$s', 'ha-image-optimizer' ),
+							SizeGuard::format_size( $file_size, 1 ),
+							$sizes_count,
+							SizeGuard::format_size( $total_unopt, 1 )
+						);
+						?>
+						<span class="ha-io-filesize-tag" title="<?php echo esc_attr( $unopt_title ); ?>">
 							<strong><?php echo esc_html( SizeGuard::format_size( $total_unopt, 1 ) ); ?></strong>
 						</span>
 					<?php endif; ?>
@@ -143,8 +152,16 @@ class MediaColumn {
 			</div>
 
 			<!-- Savings & Badges -->
+			<?php
+			$saved_title = sprintf(
+				/* translators: 1: saved bytes formatted, 2: saved percentage */
+				__( '%1$s gespart (-%2$s%%)', 'ha-image-optimizer' ),
+				SizeGuard::format_size( $saved_bytes, 1 ),
+				number_format_i18n( $percent, 1 )
+			);
+			?>
 			<div class="ha-io-badge-group">
-				<span class="ha-io-badge ha-io-badge-green" title="<?php echo esc_attr( sprintf( __( '%s gespart (-%s%%)', 'ha-image-optimizer' ), SizeGuard::format_size( $saved_bytes, 1 ), number_format_i18n( $percent, 1 ) ) ); ?>">
+				<span class="ha-io-badge ha-io-badge-green" title="<?php echo esc_attr( $saved_title ); ?>">
 					-<?php echo esc_html( number_format_i18n( $percent, 1 ) ); ?>%
 					<span class="ha-io-bytes">(<?php echo esc_html( SizeGuard::format_size( $saved_bytes, 1 ) ); ?>)</span>
 				</span>

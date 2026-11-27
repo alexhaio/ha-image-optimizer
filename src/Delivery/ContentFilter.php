@@ -159,8 +159,8 @@ class ContentFilter {
 			return null;
 		}
 
-		$parsed_url = parse_url( $url );
-		if ( false === $parsed_url || empty( $parsed_url['path'] ) ) {
+		$parsed_url = wp_parse_url( $url );
+		if ( ! is_array( $parsed_url ) || empty( $parsed_url['path'] ) ) {
 			return null;
 		}
 
@@ -174,7 +174,7 @@ class ContentFilter {
 		$upload_dir      = wp_upload_dir();
 		$upload_url      = (string) $upload_dir['baseurl'];
 		$upload_dir_path = (string) $upload_dir['basedir'];
-		$upload_parsed   = parse_url( $upload_url );
+		$upload_parsed   = wp_parse_url( $upload_url );
 		$upload_host     = strtolower( (string) ( $upload_parsed['host'] ?? '' ) );
 		$upload_base_p   = (string) ( $upload_parsed['path'] ?? '' );
 
@@ -185,7 +185,7 @@ class ContentFilter {
 
 		$content_url    = content_url();
 		$content_dir    = defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR : ABSPATH . 'wp-content';
-		$content_parsed = parse_url( $content_url );
+		$content_parsed = wp_parse_url( $content_url );
 		$content_host   = strtolower( (string) ( $content_parsed['host'] ?? '' ) );
 		$content_base_p = (string) ( $content_parsed['path'] ?? '' );
 
@@ -298,7 +298,7 @@ class ContentFilter {
 		if ( $has_webp ) {
 			$sets[] = "url('{$webp_url}') type('image/webp')";
 		}
-		$path_part = (string) parse_url( $img_url, PHP_URL_PATH );
+		$path_part = (string) wp_parse_url( $img_url, PHP_URL_PATH );
 		$ext       = strtolower( pathinfo( $path_part, PATHINFO_EXTENSION ) );
 		$orig_mime = match ( $ext ) {
 			'png'   => 'image/png',

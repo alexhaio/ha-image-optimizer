@@ -64,6 +64,21 @@ namespace {
 		}
 	}
 
+	if ( ! function_exists( 'wp_delete_file' ) ) {
+		function wp_delete_file( $file ): void {
+			$file = (string) $file;
+			if ( '' !== $file && file_exists( $file ) ) {
+				@unlink( $file );
+			}
+		}
+	}
+
+	if ( ! function_exists( 'wp_parse_url' ) ) {
+		function wp_parse_url( $url, $component = -1 ) {
+			return parse_url( (string) $url, $component );
+		}
+	}
+
 	if ( ! function_exists( 'wp_convert_hr_to_bytes' ) ) {
 		function wp_convert_hr_to_bytes( $value ): int {
 			$value = trim( (string) $value );

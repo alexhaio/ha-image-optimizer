@@ -66,7 +66,7 @@ class SizeGuard {
 
 		$nextgen_size = (int) filesize( $nextgen_path );
 		if ( ! self::is_smaller( $source_bytes, $nextgen_size ) ) {
-			@unlink( $nextgen_path );
+			wp_delete_file( $nextgen_path );
 			return false;
 		}
 

@@ -183,7 +183,7 @@ class BackupManager {
 		if ( $origin && $target_file !== $current_file ) {
 			self::delete_subsizes_files( $attachment_id, $current_file );
 			if ( file_exists( $current_file ) ) {
-				@unlink( $current_file );
+				wp_delete_file( $current_file );
 			}
 		}
 
@@ -225,7 +225,7 @@ class BackupManager {
 			if ( ! empty( $size['file'] ) ) {
 				$sub_path = trailingslashit( $base_dir ) . $size['file'];
 				if ( file_exists( $sub_path ) && $sub_path !== $master_file ) {
-					@unlink( $sub_path );
+					wp_delete_file( $sub_path );
 				}
 			}
 		}
@@ -258,7 +258,7 @@ class BackupManager {
 		if ( $origin && $target_file !== $current_file ) {
 			self::delete_subsizes_files( $attachment_id, $current_file );
 			if ( file_exists( $current_file ) ) {
-				@unlink( $current_file );
+				wp_delete_file( $current_file );
 			}
 		}
 
@@ -294,7 +294,7 @@ class BackupManager {
 		delete_post_meta( $attachment_id, '_ha_io_custom_level' );
 
 		// 5. Delete backup file itself
-		@unlink( $backup_path );
+		wp_delete_file( $backup_path );
 
 		return true;
 	}
@@ -337,7 +337,7 @@ class BackupManager {
 
 		foreach ( array_unique( $candidates ) as $candidate ) {
 			if ( $candidate && file_exists( $candidate ) && $candidate !== $file ) {
-				@unlink( $candidate );
+				wp_delete_file( $candidate );
 			}
 		}
 	}
@@ -411,7 +411,7 @@ class BackupManager {
 		}
 
 		self::clean_custom_nextgen( $source_path );
-		@unlink( $backup_path );
+		wp_delete_file( $backup_path );
 
 		return true;
 	}
@@ -432,7 +432,7 @@ class BackupManager {
 
 		foreach ( array_unique( $candidates ) as $candidate ) {
 			if ( $candidate && file_exists( $candidate ) && $candidate !== $source_path ) {
-				@unlink( $candidate );
+				wp_delete_file( $candidate );
 			}
 		}
 	}

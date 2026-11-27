@@ -387,12 +387,12 @@ class AttachmentProcessor {
 				if ( ! empty( $old_size_info['file'] ) ) {
 					$old_sub = trailingslashit( $base_dir ) . $old_size_info['file'];
 					if ( file_exists( $old_sub ) ) {
-						@unlink( $old_sub );
+						wp_delete_file( $old_sub );
 					}
 				}
 			}
 
-			@unlink( $file );
+			wp_delete_file( $file );
 			$file = $jpg_file;
 			$mime = 'image/jpeg';
 
@@ -419,7 +419,7 @@ class AttachmentProcessor {
 			}
 		} else {
 			// Discard the larger JPEG
-			@unlink( $jpg_file );
+			wp_delete_file( $jpg_file );
 		}
 
 		return $file;

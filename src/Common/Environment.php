@@ -67,8 +67,9 @@ class Environment {
 		}
 
 		// Server Software
-		$raw_software    = $_SERVER['SERVER_SOFTWARE'] ?? '';
-		$server_software = sanitize_text_field( function_exists( 'wp_unslash' ) ? wp_unslash( $raw_software ) : (string) $raw_software );
+		$server_software = isset( $_SERVER['SERVER_SOFTWARE'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) )
+			: '';
 		$is_apache       = stripos( $server_software, 'apache' ) !== false;
 		$is_litespeed    = stripos( $server_software, 'litespeed' ) !== false;
 		$is_nginx        = stripos( $server_software, 'nginx' ) !== false;
@@ -82,11 +83,7 @@ class Environment {
 
 		// Uploads directory writeability
 		$upload_dir = wp_upload_dir();
-		$can_write  = ! empty( $upload_dir['basedir'] ) && (
-			function_exists( 'wp_is_writable' )
-				? wp_is_writable( $upload_dir['basedir'] )
-				: is_writable( $upload_dir['basedir'] )
-		);
+		$can_write  = ! empty( $upload_dir['basedir'] ) && wp_is_writable( $upload_dir['basedir'] );
 
 		// Best available driver
 		$best_driver = 'none';

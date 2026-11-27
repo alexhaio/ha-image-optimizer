@@ -104,7 +104,7 @@ class ImagickDriver implements OptimizerInterface {
 
 			// SizeGuard: Never replace if new file is larger or equal
 			if ( ! SizeGuard::is_smaller( $original_size, $new_size ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 				return OptimizationResult::skipped(
 					$file_path,
 					$original_size,
@@ -115,7 +115,7 @@ class ImagickDriver implements OptimizerInterface {
 			// Replace original safely
 			if ( ! @rename( $temp_file, $file_path ) ) {
 				@copy( $temp_file, $file_path );
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 
 			$saved_bytes   = $original_size - $new_size;
@@ -132,7 +132,7 @@ class ImagickDriver implements OptimizerInterface {
 
 		} catch ( \Throwable $e ) {
 			if ( file_exists( $temp_file ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 			return OptimizationResult::failure( $file_path, $e->getMessage(), $original_size );
 		}
@@ -298,7 +298,7 @@ class ImagickDriver implements OptimizerInterface {
 			$imagick->destroy();
 
 			if ( ! file_exists( $temp_file ) || filesize( $temp_file ) <= 0 ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 				return false;
 			}
 
@@ -306,19 +306,19 @@ class ImagickDriver implements OptimizerInterface {
 			$src_size = (int) filesize( $source_path );
 			$new_size = (int) filesize( $temp_file );
 			if ( ! SizeGuard::is_smaller( $src_size, $new_size ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 				return false;
 			}
 
 			if ( ! @rename( $temp_file, $target_path ) ) {
 				@copy( $temp_file, $target_path );
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 
 			return file_exists( $target_path );
 		} catch ( \Throwable ) {
 			if ( file_exists( $temp_file ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 			return false;
 		}
@@ -362,7 +362,7 @@ class ImagickDriver implements OptimizerInterface {
 			$imagick->destroy();
 
 			if ( ! file_exists( $temp_file ) || filesize( $temp_file ) <= 0 ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 				return false;
 			}
 
@@ -370,19 +370,19 @@ class ImagickDriver implements OptimizerInterface {
 			$src_size = (int) filesize( $source_path );
 			$new_size = (int) filesize( $temp_file );
 			if ( ! SizeGuard::is_smaller( $src_size, $new_size ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 				return false;
 			}
 
 			if ( ! @rename( $temp_file, $target_path ) ) {
 				@copy( $temp_file, $target_path );
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 
 			return file_exists( $target_path );
 		} catch ( \Throwable ) {
 			if ( file_exists( $temp_file ) ) {
-				@unlink( $temp_file );
+				wp_delete_file( $temp_file );
 			}
 			return false;
 		}

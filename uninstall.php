@@ -66,7 +66,7 @@ foreach ( array_unique( $scan_roots ) as $root_dir ) {
 			}
 			$path = $ng_item->getPathname();
 			if ( preg_match( '/\.(?:jpe?g|png|gif|webp)\.(?:webp|avif)$/i', $path ) ) {
-				@unlink( $path );
+				wp_delete_file( $path );
 			}
 		}
 	} catch ( Throwable ) {
@@ -108,7 +108,7 @@ if ( is_dir( $backup_dir ) ) {
 		if ( $item->isDir() ) {
 			@rmdir( $item->getRealPath() );
 		} else {
-			@unlink( $item->getRealPath() );
+			wp_delete_file( $item->getRealPath() );
 		}
 	}
 	@rmdir( $backup_dir );
@@ -116,13 +116,13 @@ if ( is_dir( $backup_dir ) ) {
 
 // d) Entfernen von generierten .htaccess-Regeln in wp-content/uploads/.htaccess
 $htaccess_file = trailingslashit( $upload_dir['basedir'] ) . '.htaccess';
-if ( file_exists( $htaccess_file ) && is_writable( $htaccess_file ) ) {
+if ( file_exists( $htaccess_file ) && wp_is_writable( $htaccess_file ) ) {
 	$content = file_get_contents( $htaccess_file );
 	if ( false !== $content && str_contains( $content, '# BEGIN HA_IMAGE_OPTIMIZER' ) ) {
 		$clean_content = preg_replace( '/# BEGIN HA_IMAGE_OPTIMIZER.*?# END HA_IMAGE_OPTIMIZER\s*/s', '', $content );
 		if ( null !== $clean_content ) {
 			if ( trim( $clean_content ) === '' ) {
-				@unlink( $htaccess_file );
+				wp_delete_file( $htaccess_file );
 			} else {
 				file_put_contents( $htaccess_file, $clean_content );
 			}
