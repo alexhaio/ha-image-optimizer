@@ -1,231 +1,980 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: HA Image Optimizer 1.0.1\n"
-"Report-Msgid-Bugs-To: https://github.com/alexhaio/ha-image-optimizer/issues\n"
+"Project-Id-Version: HA Image Optimizer 2.2.0\n"
+"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: de_DE\n"
 "X-Domain: ha-image-optimizer\n"
 
-msgid "HA Image Optimizer"
-msgstr "HA Image Optimizer"
+msgid "%1$d of %2$d images can still be optimized."
+msgstr "%1$d von %2$d Bildern können noch optimiert werden."
 
-msgid "Massenoptimierung"
-msgstr "Massenoptimierung"
+msgid "%1$s in \"%2$s\" (#%3$d)"
+msgstr "%1$s in \"%2$s\" (#%3$d)"
 
-msgid "Einstellungen wurden erfolgreich gespeichert."
-msgstr "Einstellungen wurden erfolgreich gespeichert."
+msgid "%1$s saved (-%2$s%%)"
+msgstr "%1$s gespart (-%2$s%%)"
 
-msgid "Optimiere..."
-msgstr "Optimiere..."
+msgid "%1$s: \"%2$s\""
+msgstr "%1$s: \"%2$s\""
 
-msgid "Stelle wieder her..."
-msgstr "Stelle wieder her..."
+msgid "%1$s: \"%2$s\" (#%3$s)"
+msgstr "%1$s: \"%2$s\" (#%3$s)"
 
-msgid "Optimierung abgeschlossen!"
-msgstr "Optimierung abgeschlossen!"
+msgid "%1$s: Entry #%2$s"
+msgstr "%1$s: Eintrag #%2$s"
 
-msgid "Ein Fehler ist aufgetreten."
-msgstr "Ein Fehler ist aufgetreten."
+msgid ".htaccess Server Rewrite (0 ms PHP overhead)"
+msgstr ".htaccess Server-Rewrite (0 ms PHP-Overhead)"
 
-msgid "Möchtest du das Originalbild wirklich wiederherstellen?"
-msgstr "Möchtest du das Originalbild wirklich wiederherstellen?"
-
-msgid "Pausieren"
-msgstr "Pausieren"
-
-msgid "Fortsetzen"
-msgstr "Fortsetzen"
-
-msgid "HA Optimizer Details"
-msgstr "HA Optimizer Details"
-
-msgid "Unoptimiert"
-msgstr "Unoptimiert"
-
-msgid "Optimieren"
-msgstr "Optimieren"
-
-msgid "Neu optimieren"
-msgstr "Neu optimieren"
-
-msgid "Wiederherstellen"
-msgstr "Wiederherstellen"
-
-msgid "Keine ausreichenden Berechtigungen."
-msgstr "Keine ausreichenden Berechtigungen."
-
-msgid "Ungültige Bild-ID."
-msgstr "Ungültige Bild-ID."
-
-msgid "Bild erfolgreich optimiert."
-msgstr "Bild erfolgreich optimiert."
-
-msgid "Originalbild erfolgreich wiederhergestellt."
-msgstr "Originalbild erfolgreich wiederhergestellt."
-
-msgid "Wiederherstellung fehlgeschlagen (kein Backup vorhanden)."
-msgstr "Wiederherstellung fehlgeschlagen (kein Backup vorhanden)."
-
-msgid "Verlustfrei (Lossless - 100% Schärfe)"
-msgstr "Verlustfrei (Lossless - 100% Schärfe)"
-
-msgid "Smart (Ausgewogen - ca. 82% Qualität)"
-msgstr "Smart (Ausgewogen - ca. 82% Qualität)"
-
-msgid "Ultra (Aggressiv - ca. 72% Qualität)"
-msgstr "Ultra (Aggressiv - ca. 72% Qualität)"
-
-msgid "<picture>-Tag Ersetzung (Universell & CDN-sicher)"
-msgstr "<picture>-Tag Ersetzung (Universell & CDN-sicher)"
-
-msgid ".htaccess Server-Rewrite (0 ms PHP-Overhead, Apache & LiteSpeed)"
+msgid ".htaccess Server Rewrite (0 ms PHP overhead, Apache & LiteSpeed)"
 msgstr ".htaccess Server-Rewrite (0 ms PHP-Overhead, Apache & LiteSpeed)"
 
-msgid "Deaktiviert (Bilder werden nicht automatisch ersetzt)"
-msgstr "Deaktiviert (Bilder werden nicht automatisch ersetzt)"
+msgid ".htaccess supported"
+msgstr ".htaccess unterstützt"
 
-msgid "HA Image Optimizer: Einstellungen & System-Status"
-msgstr "HA Image Optimizer: Einstellungen & System-Status"
+msgid "<picture> tag replacement (Default & Universal)"
+msgstr "<picture>-Tag Ersetzung (Standard & Universell)"
 
-msgid "Server-Fähigkeiten & Diagnose"
-msgstr "Server-Fähigkeiten & Diagnose"
+msgid "<picture> tag replacement (Universal & CDN-safe)"
+msgstr "<picture>-Tag Ersetzung (Universell & CDN-sicher)"
 
-msgid "PHP Version:"
-msgstr "PHP Version:"
-
-msgid "Aktiver Treiber:"
-msgstr "Aktiver Treiber:"
-
-msgid "WebP Unterstützung:"
-msgstr "WebP Unterstützung:"
-
-msgid "AVIF Unterstützung:"
+msgid "AVIF Support:"
 msgstr "AVIF Unterstützung:"
 
-msgid "Webserver:"
-msgstr "Webserver:"
+msgid "AVIF is currently not available on your server (requires PHP 8.1+ GD or ImageMagick with AVIF support)."
+msgstr "AVIF ist auf deinem Server aktuell nicht verfügbar (erfordert PHP 8.1+ GD oder ImageMagick mit AVIF-Support)."
 
-msgid "Speicherlimit:"
-msgstr "Speicherlimit:"
+msgid "Actions"
+msgstr "Aktionen"
 
-msgid "Kompressions-Einstellungen"
-msgstr "Kompressions-Einstellungen"
+msgid "Active Driver:"
+msgstr "Aktiver Treiber:"
 
-msgid "Originalbild-Optimierung (Master)"
-msgstr "Originalbild-Optimierung (Master)"
+msgid "Actively used"
+msgstr "Aktiv verwendet"
 
-msgid "Zwischengrößen-Optimierung (Thumbnails)"
-msgstr "Zwischengrößen-Optimierung (Thumbnails)"
+msgid "Adjust Auditor settings"
+msgstr "Auditor-Einstellungen anpassen"
 
-msgid "Next-Gen Bildformate"
-msgstr "Next-Gen Bildformate"
+msgid "After"
+msgstr "Nachher"
 
-msgid "WebP-Versionen automatisch generieren"
-msgstr "WebP-Versionen automatisch generieren"
+msgid "All"
+msgstr "Alle"
 
-msgid "AVIF-Versionen automatisch generieren (Next-Gen+)"
+msgid "All media already checked. No unscanned files found."
+msgstr "Alle Medien bereits geprüft. Keine ungescannten Dateien vorhanden."
+
+msgid "All media have already been checked! No unscanned files remaining."
+msgstr "Alle Medien sind bereits geprüft! Keine ungescannten Dateien vorhanden."
+
+msgid "Already Optimized"
+msgstr "Bereits Optimiert"
+
+msgid "Also catches stubborn page-builder images across the entire HTML output. Recommended when using a caching plugin (WP Rocket, LiteSpeed Cache, etc.)."
+msgstr "Findet auch hartnäckige Page-Builder-Bilder im gesamten HTML. Empfohlen in Kombination mit einem Caching-Plugin (WP Rocket, LiteSpeed Cache etc.)."
+
+msgid "An error occurred."
+msgstr "Ein Fehler ist aufgetreten."
+
+msgid "Analyzing Media Library..."
+msgstr "Analysiere Mediathek..."
+
+msgid "Animated GIF skipped to prevent animation loss in GD."
+msgstr "Animiertes GIF übersprungen, um Animationsverlust in GD zu verhindern."
+
+msgid "Attached to: <a href=\"%1$s\" target=\"_blank\" style=\"color: #0969da; text-decoration: underline; font-weight: 500;\">\"%2$s\" (#%3$d) ↗</a>, but not found in content or featured image."
+msgstr "Zugeordnet zu: <a href=\"%1$s\" target=\"_blank\" style=\"color: #0969da; text-decoration: underline; font-weight: 500;\">\"%2$s\" (#%3$d) ↗</a>, aber im Text oder Beitragsbild nicht auffindbar."
+
+msgid "Attached, but unused"
+msgstr "Zugeordnet, aber inaktiv"
+
+msgid "Attached, unused"
+msgstr "Zugeordnet, inaktiv"
+
+msgid "Attachment not found."
+msgstr "Attachment nicht gefunden."
+
+msgid "Audit cache cleared successfully."
+msgstr "Audit-Cache erfolgreich geleert."
+
+msgid "Automatic Background Scan"
+msgstr "Automatischer Hintergrund-Scan"
+
+msgid "Automatic Resizing"
+msgstr "Automatische Größenbeschränkung (Resizing)"
+
+msgid "Automatic gallery in parent post \"%1$s\" (#%2$d)"
+msgstr "Automatische Galerie in übergeordnetem Beitrag \"%1$s\" (#%2$d)"
+
+msgid "Automatically convert non-transparent PNGs to JPEG"
+msgstr "Nicht-transparente PNGs automatisch in JPEG umwandeln"
+
+msgid "Automatically downscale oversized uploads to maximum:"
+msgstr "Übergroße Uploads automatisch herunterskalieren auf maximal:"
+
+msgid "Automatically generate AVIF versions (Next-Gen+)"
 msgstr "AVIF-Versionen automatisch generieren (Next-Gen+)"
 
-msgid "Auslieferungsmethode (Delivery)"
+msgid "Automatically generate WebP versions"
+msgstr "WebP-Versionen automatisch generieren"
+
+msgid "Automatically scan all third-party tables (sliders, forms, page builders, plugins)"
+msgstr "Alle Drittanbieter-Tabellen automatisch scannen (Slider, Formulare, Page-Builder, Plugins)"
+
+msgid "Available ✅"
+msgstr "Verfügbar ✅"
+
+msgid "Back up unmodified original image in protected backup folder"
+msgstr "Unverändertes Originalbild im geschützten Backup-Ordner sichern"
+
+msgid "Background Tasks (Async)"
+msgstr "Hintergrund-Tasks (Asynchron)"
+
+msgid "Background Tasks: Active"
+msgstr "Hintergrund-Tasks: Aktiv"
+
+msgid "Background scan cancelled."
+msgstr "Hintergrund-Scan abgebrochen."
+
+msgid "Background scan completed successfully!"
+msgstr "Hintergrund-Scan erfolgreich abgeschlossen!"
+
+msgid "Background scan completed successfully! All media items have been analyzed."
+msgstr "Hintergrund-Scan erfolgreich abgeschlossen! Alle Medien wurden analysiert."
+
+msgid "Background scan paused."
+msgstr "Hintergrund-Scan pausiert."
+
+msgid "Background scan resumed."
+msgstr "Hintergrund-Scan fortgesetzt."
+
+msgid "Background scan started (%d media items in queue)..."
+msgstr "Hintergrund-Scan gestartet (%d Medien in der Queue)..."
+
+msgid "Background scan was cancelled."
+msgstr "Hintergrund-Scan wurde abgebrochen."
+
+msgid "Background scan was paused by user."
+msgstr "Hintergrund-Scan wurde vom Benutzer pausiert."
+
+msgid "Background scan was started."
+msgstr "Hintergrund-Scan wurde gestartet."
+
+msgid "Background tasks are disabled in settings."
+msgstr "Hintergrund-Tasks sind in den Einstellungen deaktiviert."
+
+msgid "Backup & Metadata"
+msgstr "Backup & Metadaten"
+
+msgid "Before"
+msgstr "Vorher"
+
+msgid "Bulk Optimization"
+msgstr "Massenoptimierung"
+
+msgid "Bulk optimization processes your entire Media Library or static theme images locally in the background. For each image, the original is optimized losslessly, all intermediate sizes are compressed, and modern WebP/AVIF versions are generated."
+msgstr "Die Massenoptimierung verarbeitet deine gesamte Mediathek oder statische Theme-Bilder lokal im Hintergrund. Für jedes Bild wird das Original verlustfrei optimiert, alle Zwischengrößen komprimiert und moderne WebP/AVIF-Versionen erzeugt."
+
+msgid "Bulk optimization ready:"
+msgstr "Massenoptimierung bereit:"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Category thumbnail in \"%1$s\" (%2$s)"
+msgstr "Kategorie-Vorschaubild in \"%1$s\" (%2$s)"
+
+msgid "Change individual compression level:"
+msgstr "Individuelle Komprimierungsstufe ändern:"
+
+msgid "Checked: %1$d of %2$d media items (IDs: %3$s)..."
+msgstr "Geprüft: %1$d von %2$d Medien (IDs: %3$s)..."
+
+msgid "Checks images live in the open browser window via AJAX with pre-indexing and zero-downtime protection."
+msgstr "Prüft Bilder live im geöffneten Browserfenster per AJAX mit Vorindexierung und Zero-Downtime-Schutz."
+
+msgid "Clear Cache"
+msgstr "Cache leeren"
+
+msgid "Click \"Start Scan Now\" above to scan your Media Library for unused images."
+msgstr "Klicke oben auf \"Scan jetzt starten\", um deine Mediathek auf ungenutzte Bilder zu prüfen."
+
+msgid "Complete data deletion on uninstall:"
+msgstr "Vollständige Datenlöschung bei Deinstallation:"
+
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+msgid "Completely orphaned"
+msgstr "Vollständig verwaist"
+
+msgid "Compress original"
+msgstr "Original komprimieren"
+
+msgid "Compression Settings"
+msgstr "Kompressions-Einstellungen"
+
+msgid "Compression for this image:"
+msgstr "Komprimierung für dieses Bild:"
+
+msgid "Compression level for this image"
+msgstr "Komprimierungsstufe für dieses Bild"
+
+msgid "Configure how thoroughly the Media Auditor searches your database for image references and how newly uploaded media are protected."
+msgstr "Konfiguriere, wie gründlich der Medien-Auditor deine Datenbank nach Bildreferenzen durchsucht und wie neu hochgeladene Medien geschützt werden."
+
+msgid "Content pre-indexing for lightning-fast queries (Recommended)"
+msgstr "Inhalts-Vorindexierung für blitzschnelle Abfragen (Empfohlen)"
+
+msgid "Controls compression of all intermediate web image sizes (thumbnail, medium, large, etc.)."
+msgstr "Steuert die Kompression aller Web-Zwischengrößen (thumbnail, medium, large etc.)."
+
+msgid "Could not delete image."
+msgstr "Konnte Bild nicht löschen."
+
+msgid "Could not write temporary file."
+msgstr "Konnte temporäre Datei nicht schreiben."
+
+msgid "Current file:"
+msgstr "Aktuelle Datei:"
+
+msgid "Current server load: %s"
+msgstr "Aktueller Server-Load: %s"
+
+msgid "Current server time: %s"
+msgstr "Aktuelle Serverzeit: %s Uhr"
+
+msgid "Currently active: %s. When re-optimizing, the image is recalculated losslessly from the original backup using this level."
+msgstr "Aktuell aktiv: %s. Beim erneuten Optimieren wird das Bild aus dem Original-Backup verlustfrei mit dieser Stufe neu berechnet."
+
+msgid "Currently using the global default setting. Choose an individual level (High, Medium, or Low) to compress this image differently."
+msgstr "Aktuell gilt die globale Standard-Einstellung. Wähle eine individuelle Stufe (Hoch, Mittel oder Niedrig), um dieses Bild gezielt abweichend zu komprimieren."
+
+msgid "Custom Field / ACF (\"%1$s\") in \"%2$s\" (#%3$d, %4$s)"
+msgstr "Benutzerdefiniertes Feld / ACF (\"%1$s\") in \"%2$s\" (#%3$d, %4$s)"
+
+msgid "Default (Global setting)"
+msgstr "Standard (Globale Einstellung)"
+
+msgid "Default (Global)"
+msgstr "Standard (Global)"
+
+msgid "Default Level"
+msgstr "Standard-Stufe"
+
+msgid "Default: themes. Example: themes or uploads/custom-folder"
+msgstr "Standard: themes. Beispiel: themes oder uploads/custom-folder"
+
+msgid "Delete (Backup)"
+msgstr "Löschen (Backup)"
+
+msgid "Delete Selected (Backup)"
+msgstr "Ausgewählte löschen (Backup)"
+
+msgid "Delivery Method"
 msgstr "Auslieferungsmethode (Delivery)"
+
+msgid "Determines how many images are checked per batch and how long the cooldown pause between queries is."
+msgstr "Legt fest, wie viele Bilder pro Teilschritt geprüft werden und wie lange die Abkühlpause zwischen den Abfragen ist."
+
+msgid "Directories to scan (one path per line, relative to wp-content):"
+msgstr "Zu durchsuchende Verzeichnisse (eine Zeile pro Pfad, relativ zu wp-content):"
+
+msgid "Disabled"
+msgstr "Deaktiviert"
+
+msgid "Disabled (images are not replaced automatically)"
+msgstr "Deaktiviert (Bilder werden nicht automatisch ersetzt)"
+
+msgid "Do you really want to cancel the running background scan?"
+msgstr "Möchtest du den laufenden Hintergrund-Scan wirklich abbrechen?"
+
+msgid "Do you really want to restore the original image?"
+msgstr "Möchtest du das Originalbild wirklich wiederherstellen?"
+
+msgid "Eco (Gentle: 3 images / step, 1s pause – minimal server load)"
+msgstr "Eco (Schonend: 3 Bilder / Schritt, 1s Pause – minimale Serverlast)"
+
+msgid "Edit in Media Library"
+msgstr "In Mediathek bearbeiten"
+
+msgid "Embedded in content (Gallery) of \"%1$s\" (#%2$d, %3$s)"
+msgstr "Eingebunden im Inhalt (Galerie) von \"%1$s\" (#%2$d, %3$s)"
+
+msgid "Embedded in content of \"%1$s\" (#%2$d, %3$s)"
+msgstr "Eingebunden im Inhalt von \"%1$s\" (#%2$d, %3$s)"
+
+msgid "Enables running the scan in gentle background batches on the server (via non-blocking HTTP & WP-Cron). You do not need to keep this browser tab open."
+msgstr "Ermöglicht das Durchführen des Scans in schonenden Teilschritten im Server-Hintergrund (via Non-Blocking HTTP & WP-Cron). Der Browser-Tab muss während des Scans nicht geöffnet bleiben."
+
+msgid "Error saving optimized GD file."
+msgstr "Fehler beim Speichern der optimierten GD-Datei."
+
+msgid "Every 5 minutes (HA Image Optimizer)"
+msgstr "Alle 5 Minuten (HA Image Optimizer)"
+
+msgid "Explicit table names (one table per line, with or without table prefix):"
+msgstr "Explizite Tabellennamen (eine Tabelle pro Zeile, ohne oder mit Tabellen-Präfix):"
+
+msgid "Featured image in \"%1$s\" (#%2$d, %3$s)"
+msgstr "Beitragsbild in \"%1$s\" (#%2$d, %3$s)"
+
+msgid "File & Date"
+msgstr "Datei & Datum"
+
+msgid "File does not exist or is not readable."
+msgstr "Datei existiert nicht oder ist nicht lesbar."
+
+msgid "File restored from backup successfully."
+msgstr "Datei erfolgreich aus Backup wiederhergestellt."
+
+msgid "File size is 0 bytes."
+msgstr "Dateigröße ist 0 Bytes."
+
+msgid "Filename"
+msgstr "Dateiname"
+
+msgid "Files found"
+msgstr "Dateien gefunden"
+
+msgid "Finds static image files in theme folders or custom directories, compresses them, and generates WebP/AVIF files."
+msgstr "Findet statische Bilddateien in Theme-Ordnern oder benutzerdefinierten Verzeichnissen, komprimiert diese und generiert WebP/AVIF-Dateien."
+
+msgid "From:"
+msgstr "Von:"
 
 msgid "Full-Page Output Buffer"
 msgstr "Full-Page Output Buffer"
 
-msgid "Vollständigen Seitenpuffer durchsuchen (ob_start)"
-msgstr "Vollständigen Seitenpuffer durchsuchen (ob_start)"
+msgid "GD could not decode the image."
+msgstr "GD konnte das Bild nicht dekodieren."
 
-msgid "Automatische Größenbeschränkung (Resizing)"
-msgstr "Automatische Größenbeschränkung (Resizing)"
+msgid "Generate WebP & AVIF"
+msgstr "WebP & AVIF erzeugen"
 
-msgid "Übergroße Uploads automatisch herunterskalieren auf maximal:"
-msgstr "Übergroße Uploads automatisch herunterskalieren auf maximal:"
+msgid "Generates WebP/AVIF files on disk only without rewriting URLs on the frontend."
+msgstr "Erzeugt WebP/AVIF nur auf der Festplatte, ersetzt aber keine URLs im Frontend."
 
-msgid "Breite:"
-msgstr "Breite:"
+msgid "HA Image Optimizer"
+msgstr "HA Image Optimizer"
 
-msgid "Höhe:"
-msgstr "Höhe:"
-
-msgid "Backup & Metadaten"
-msgstr "Backup & Metadaten"
-
-msgid "Unverändertes Originalbild im geschützten Backup-Ordner sichern"
-msgstr "Unverändertes Originalbild im geschützten Backup-Ordner sichern"
-
-msgid "EXIF-Kameradaten und Urheberrechte beibehalten (erhöht Dateigröße)"
-msgstr "EXIF-Kameradaten und Urheberrechte beibehalten (erhöht Dateigröße)"
-
-msgid "Deinstallations-Schutzwall (HA-Standard)"
-msgstr "Deinstallations-Schutzwall (HA-Standard)"
-
-msgid "Vollständige Datenlöschung bei Deinstallation:"
-msgstr "Vollständige Datenlöschung bei Deinstallation:"
-
-msgid "Einstellungen speichern"
-msgstr "Einstellungen speichern"
-
-msgid "Nginx Konfigurations-Hilfe (Optional für Nginx-Server)"
-msgstr "Nginx Konfigurations-Hilfe (Optional für Nginx-Server)"
-
-msgid "HA Image Optimizer: Massenoptimierung (Bulk)"
+msgid "HA Image Optimizer: Bulk Optimization"
 msgstr "HA Image Optimizer: Massenoptimierung (Bulk)"
 
-msgid "Bilder Gesamt"
-msgstr "Bilder Gesamt"
+msgid "HA Image Optimizer: Settings & System Status"
+msgstr "HA Image Optimizer: Einstellungen & System-Status"
 
-msgid "Bereits Optimiert"
-msgstr "Bereits Optimiert"
+msgid "HA Optimizer"
+msgstr "HA Optimizer"
 
-msgid "Noch Unoptimiert"
-msgstr "Noch Unoptimiert"
+msgid "HA Optimizer Details"
+msgstr "HA Optimizer Details"
 
-msgid "Gesparter Speicherplatz"
-msgstr "Gesparter Speicherplatz"
+msgid "Height:"
+msgstr "Höhe:"
 
-msgid "Massenverarbeitung starten"
-msgstr "Massenverarbeitung starten"
+msgid "High (Maximum - approx. 72% quality)"
+msgstr "Hoch (Maximal - ca. 72% Qualität)"
 
-msgid "Unoptimierte Bilder jetzt verarbeiten"
-msgstr "Unoptimierte Bilder jetzt verarbeiten"
+msgid "High (Maximum)"
+msgstr "Hoch (Maximal)"
 
-msgid "Alle Bilder erneut optimieren (Erzwingen)"
-msgstr "Alle Bilder erneut optimieren (Erzwingen)"
+msgid "High (Ultra)"
+msgstr "Hoch (Ultra)"
 
-msgid "Aktivitäts-Protokoll"
-msgstr "Aktivitäts-Protokoll"
+msgid "If server load exceeds this value, the scan automatically pauses for a cooldown period until server load drops."
+msgstr "Steigt die Serverlast über diesen Wert, pausiert der Scan automatisch für eine Abkühlphase (Cooldown), bis sich der Server wieder beruhigt hat."
 
-msgid "Dieses Bild wurde noch nicht optimiert."
-msgstr "Dieses Bild wurde noch nicht optimiert."
+msgid "If your server runs Nginx and you want transparent WebP serving without modifying HTML, add the following block to your Nginx configuration:"
+msgstr "Falls dein Server auf Nginx läuft und du transparentes WebP-Serving ohne HTML-Änderung wünschst, füge folgenden Block in deine Nginx-Konfiguration ein:"
 
-msgid "Jetzt optimieren"
+msgid "Image Size & Resolution"
+msgstr "Bildgröße & Auflösung"
+
+msgid "Image moved to Trash."
+msgstr "Bild in den Papierkorb verschoben."
+
+msgid "Image optimized successfully."
+msgstr "Bild erfolgreich optimiert."
+
+msgid "Image permanently deleted (backup created)."
+msgstr "Bild dauerhaft gelöscht (Backup angelegt)."
+
+msgid "Image successfully restored from Trash."
+msgstr "Bild erfolgreich aus dem Papierkorb wiederhergestellt."
+
+msgid "Images already processed in this run"
+msgstr "Bereits verarbeitete Bilder in diesem Durchlauf"
+
+msgid "Images uploaded within this period are protected from deletion even if not yet published (0 = disabled, e.g. 14 days recommended for active editorial teams)."
+msgstr "Bilder, die innerhalb dieses Zeitraums hochgeladen wurden, werden vor dem Löschen geschützt, auch wenn sie noch nicht veröffentlicht wurden (0 = deaktiviert, z. B. 14 Tage empfohlen für aktive Redaktionen)."
+
+msgid "In accordance with HA development standards, your image backups, WebP files, and metadata are never automatically deleted upon uninstallation to prevent data loss."
+msgstr "Gemäß den HA-Entwicklungsstandards werden deine Bild-Backups, WebP-Dateien und Metadaten bei einer Deinstallation niemals automatisch gelöscht, um Datenverlust zu verhindern."
+
+msgid "Incl. Thumbnails & WebP/AVIF"
+msgstr "Inkl. Thumbnails & WebP/AVIF"
+
+msgid "Incl. WebP/AVIF"
+msgstr "Inkl. WebP/AVIF"
+
+msgid "Incremental Scan / Resume – saves time on large Media Libraries"
+msgstr "Inkrementeller Scan / Fortsetzen – spart Zeit bei großen Mediatheken"
+
+msgid "Inspects PNG images for real transparency. If no transparent pixels exist and the resulting JPEG file is smaller, the image is converted."
+msgstr "Prüft PNG-Bilder auf echte Transparenz. Wenn keine transparenten Pixel vorhanden sind und die resultierende JPEG-Datei kleiner ist, wird das Bild konvertiert."
+
+msgid "Insufficient permissions."
+msgstr "Keine ausreichenden Berechtigungen."
+
+msgid "Invalid image ID."
+msgstr "Ungültige Bild-ID."
+
+msgid "Keep EXIF camera data and copyright metadata (increases file size)"
+msgstr "EXIF-Kameradaten und Urheberrechte beibehalten (erhöht Dateigröße)"
+
+msgid "Last scan: %s"
+msgstr "Letzter Scan: %s"
+
+msgid "LayerSlider: \"%1$s\" (#%2$d)"
+msgstr "LayerSlider: \"%1$s\" (#%2$d)"
+
+msgid "Locations & Usage Evidence"
+msgstr "Fundorte & Verwendungs-Nachweise"
+
+msgid "Lossless"
+msgstr "Verlustfrei (Lossless)"
+
+msgid "Lossless (100% sharpness)"
+msgstr "Verlustfrei (Lossless - 100% Schärfe)"
+
+msgid "Lossless (Default: 100% pixel fidelity, EXIF stripped)"
+msgstr "Verlustfrei (Standard: 100% Pixeltreue, EXIF gestrippt)"
+
+msgid "Low (Lossless - 100% sharpness)"
+msgstr "Niedrig (Verlustfrei - 100% Schärfe)"
+
+msgid "Low (Lossless)"
+msgstr "Niedrig (Verlustfrei)"
+
+msgid "Manual Instant Scan in Browser"
+msgstr "Manueller Sofort-Scan im Browser"
+
+msgid "Maximum Load Average (1 min)"
+msgstr "Maximaler Load-Average (1 Min.)"
+
+msgid "Media Auditor: Detect Orphaned & Unused Files"
+msgstr "Medien-Auditor: Verwaiste & ungenutzte Dateien aufspüren"
+
+msgid "Media Auditor: Universal Deep Scan & Protection Period"
+msgstr "Medien-Auditor: Universeller Tiefenscan & Schutzfrist"
+
+msgid "Media currently cached"
+msgstr "Medien aktuell im Cache"
+
+msgid "Medium (Balanced - approx. 82% quality)"
+msgstr "Mittel (Ausgewogen - ca. 82% Qualität)"
+
+msgid "Medium (Balanced)"
+msgstr "Mittel (Ausgewogen)"
+
+msgid "Medium (Smart)"
+msgstr "Mittel (Smart)"
+
+msgid "Memory Limit:"
+msgstr "Speicherlimit:"
+
+msgid "Move Selected to Trash"
+msgstr "Ausgewählte in Papierkorb"
+
+msgid "Move all selected images to the Trash?"
+msgstr "Alle ausgewählten Bilder wirklich in den Papierkorb verschieben?"
+
+msgid "Moved to Trash"
+msgstr "In Papierkorb verschoben"
+
+msgid "Neither ImageMagick (Imagick) nor the GD library is available on this server."
+msgstr "Weder ImageMagick (Imagick) noch die GD-Bibliothek sind auf diesem Server verfügbar."
+
+msgid "Never executed"
+msgstr "Noch nie ausgeführt"
+
+msgid "Next-Gen"
+msgstr "Next-Gen"
+
+msgid "Next-Gen Image Formats"
+msgstr "Next-Gen Bildformate"
+
+msgid "NextGen"
+msgstr "NextGen"
+
+msgid "Nginx / Standalone"
+msgstr "Nginx / Standalone"
+
+msgid "Nginx Configuration Help (Optional for Nginx servers)"
+msgstr "Nginx Konfigurations-Hilfe (Optional für Nginx-Server)"
+
+msgid "Night Mode (Off-Peak Window)"
+msgstr "Nacht-Modus (Off-Peak Zeitfenster)"
+
+msgid "No IDs provided."
+msgstr "Keine IDs übergeben."
+
+msgid "No background scan active."
+msgstr "Kein Hintergrund-Scan aktiv."
+
+msgid "No backup available."
+msgstr "Kein Backup vorhanden."
+
+msgid "No file specified."
+msgstr "Keine Datei angegeben."
+
+msgid "No files provided."
+msgstr "Keine Dateien übergeben."
+
+msgid "No image driver available (GD / Imagick missing)"
+msgstr "Kein Grafiktreiber verfügbar (GD / Imagick fehlt)"
+
+msgid "No scan performed yet."
+msgstr "Noch kein Scan durchgeführt."
+
+msgid "No usage or attachment found. Safe to clean up."
+msgstr "Keine Verwendung oder Zuordnung gefunden. Kann sicher bereinigt werden."
+
+msgid "Not available (PHP 8.1+ / libavif)"
+msgstr "Nicht verfügbar (PHP 8.1+ / libavif)"
+
+msgid "Not available ❌"
+msgstr "Nicht verfügbar ❌"
+
+msgid "Official Site Logo (Theme Header)"
+msgstr "Offizielles Website-Logo (Theme Header)"
+
+msgid "Optimization completed!"
+msgstr "Optimierung abgeschlossen!"
+
+msgid "Optimize"
+msgstr "Optimieren"
+
+msgid "Optimize Media Library"
+msgstr "Mediathek optimieren"
+
+msgid "Optimize Theme Folders"
+msgstr "Theme-Ordner optimieren"
+
+msgid "Optimize now"
 msgstr "Jetzt optimieren"
 
-msgid "Bildgröße"
-msgstr "Bildgröße"
+msgid "Optimizing..."
+msgstr "Optimiere..."
 
-msgid "Vorher"
-msgstr "Vorher"
+msgid "Optional. Only needed if you want to force specific tables. By default, the auditor automatically detects all relevant tables."
+msgstr "Optional. Wird nur benötigt, falls du bestimmte Tabellen gezielt erzwingen möchtest. Standardmäßig erkennt der Auditor alle relevanten Tabellen automatisch."
 
-msgid "Nachher"
-msgstr "Nachher"
-
-msgid "Ersparnis"
-msgstr "Ersparnis"
-
-msgid "Originalbild (Master)"
+msgid "Original Image (Master)"
 msgstr "Originalbild (Master)"
 
-msgid "Erneut optimieren"
-msgstr "Erneut optimieren"
+msgid "Original Image Optimization (Master)"
+msgstr "Originalbild-Optimierung (Master)"
 
-msgid "Original wiederherstellen"
-msgstr "Original wiederherstellen"
-
-msgid "Originalbild ist sicher im Backup gespeichert."
+msgid "Original image is safely stored in backup."
 msgstr "Originalbild ist sicher im Backup gespeichert."
 
-msgid "Kein Backup vorhanden."
-msgstr "Kein Backup vorhanden."
+msgid "Original image restored successfully."
+msgstr "Originalbild erfolgreich wiederhergestellt."
+
+msgid "Original was already smaller or equal in size. File kept unchanged."
+msgstr "Original war bereits kleiner oder gleich groß. Datei beibehalten."
+
+msgid "Original: %1$s, Total incl. %2$d sub-sizes: %3$s"
+msgstr "Original: %1$s, Gesamt inkl. %2$d Zwischengrößen: %3$s"
+
+msgid "Orphaned Media"
+msgstr "Verwaiste Medien"
+
+msgid "Orphaned Media (Auditor)"
+msgstr "Verwaiste Medien (Auditor)"
+
+msgid "Outside this window, the background scan pauses automatically and waits for off-peak night hours. Protects live visitors 100% from database load."
+msgstr "Außerhalb dieses Fensters pausiert der Hintergrund-Scan automatisch und wartet auf die verkehrsarmen Nachtstunden. Schützt Live-Besucher zu 100 % vor Datenbanklast."
+
+msgid "PHP Version:"
+msgstr "PHP Version:"
+
+msgid "PNG to JPEG Conversion"
+msgstr "PNG-zu-JPEG Konvertierung"
+
+msgid "Pause"
+msgstr "Pausieren"
+
+msgid "Paused"
+msgstr "Pausiert"
+
+msgid "Performance Mode (Smart Early-Exit)"
+msgstr "Performance-Modus (Smart Early-Exit)"
+
+msgid "Permanently delete all backups in /ha-backups/, WebP/AVIF files, and database statistics when the plugin is uninstalled."
+msgstr "Alle Backups in /ha-backups/, WebP/AVIF-Dateien und Datenbank-Statistiken unwiderruflich löschen, wenn das Plugin deinstalliert wird."
+
+msgid "Permission denied."
+msgstr "Keine Berechtigung."
+
+msgid "Post meta (\"%1$s\") in \"%2$s\" (#%3$d)"
+msgstr "Beitragsfeld (\"%1$s\") in \"%2$s\" (#%3$d)"
+
+msgid "Pre-scans posts and page builders once in a structured pass and detects image references in memory within milliseconds. Prevents thousands of separate SQL full-table scans and drastically reduces database load."
+msgstr "Scannt Beiträge und Page-Builder einmalig strukturiert vorab und erkennt Bildreferenzen in Millisekunden im Arbeitsspeicher. Verhindert tausende separate SQL-Full-Table-Scans und entlastet die Datenbank drastisch."
+
+msgid "Preparing queue..."
+msgstr "Bereite Queue vor..."
+
+msgid "Preview"
+msgstr "Vorschau"
+
+msgid "Processing Intensity & Pacing"
+msgstr "Arbeits-Intensität & Pacing"
+
+msgid "Processing images..."
+msgstr "Verarbeite Bilder..."
+
+msgid "Protection Period for New Uploads"
+msgstr "Schutzfrist für neue Uploads"
+
+msgid "Protection period for new uploads: %d days"
+msgstr "Schutzfrist für neue Uploads: %d Tage"
+
+msgid "Re-optimize"
+msgstr "Neu optimieren"
+
+msgid "Re-optimize all images (Force)"
+msgstr "Alle Bilder erneut optimieren (Erzwingen)"
+
+msgid "Really move this image to the Trash?"
+msgstr "Dieses Bild wirklich in den Papierkorb verschieben?"
+
+msgid "Reclaimable Storage"
+msgstr "Freigebbarer Speicher"
+
+msgid "Reduces database queries by up to 90%. Once an image is found as a featured image, in post content, theme, or widget, subsequent heavy table scans are skipped for that image."
+msgstr "Reduziert Datenbankabfragen um bis zu 90 %. Sobald ein Bild als Beitragsbild, im Seiteninhalt, im Theme oder Widget gefunden wurde, werden nachfolgende schwere Tabellenscans für dieses Bild übersprungen."
+
+msgid "Replaces <img> with <picture> and inline styles with CSS image-set(). Works with all servers and CDNs."
+msgstr "Ersetzt <img> durch <picture> und Inline-Styles durch CSS image-set(). Funktioniert mit allen Servern und CDNs."
+
+msgid "Restore"
+msgstr "Wiederherstellen"
+
+msgid "Restore failed (no backup available)."
+msgstr "Wiederherstellung fehlgeschlagen (kein Backup vorhanden)."
+
+msgid "Restore failed."
+msgstr "Wiederherstellung fehlgeschlagen."
+
+msgid "Restore original"
+msgstr "Original wiederherstellen"
+
+msgid "Restoring..."
+msgstr "Stelle wieder her..."
+
+msgid "Resume"
+msgstr "Fortsetzen"
+
+msgid "Resume Background Scan"
+msgstr "Hintergrund-Scan fortsetzen"
+
+msgid "Resume Scan / Check Unscanned"
+msgstr "Scan fortsetzen / Ungescannte prüfen"
+
+msgid "Resuming background scan..."
+msgstr "Hintergrund-Scan wird fortgesetzt..."
+
+msgid "Reverse Index: Active"
+msgstr "Umkehr-Suche: Aktiv"
+
+msgid "Reverse Indexing"
+msgstr "Umkehr-Suche (Reverse-Indexing)"
+
+msgid "Run Media Audit automatically in the background"
+msgstr "Medien-Audit automatisch im Hintergrund ausführen"
+
+msgid "Run background scan at night only (automatically active for background tasks)"
+msgstr "Hintergrund-Scan nur nachts ausführen (Automatisch aktiv bei Hintergrund-Tasks)"
+
+msgid "Running"
+msgstr "Läuft"
+
+msgid "Runs gently in asynchronous batches in the server background. You can close this browser window at any time."
+msgstr "Läuft schonend in Teilschritten asynchron im Server-Hintergrund. Du kannst dieses Browserfenster jederzeit schließen."
+
+msgid "Runs gently in server background batches – preferably during the night window (%1$s – %2$s). You can close this browser window at any time."
+msgstr "Läuft schonend in Teilschritten im Server-Hintergrund – bevorzugt im Nachtfenster (%1$s – %2$s Uhr). Du kannst dieses Browserfenster jederzeit schließen."
+
+msgid "Safely embedded on the website"
+msgstr "Sicher auf der Website eingebunden"
+
+msgid "Save Settings"
+msgstr "Einstellungen speichern"
+
+msgid "Saved Storage"
+msgstr "Gesparter Speicherplatz"
+
+msgid "Savings"
+msgstr "Ersparnis"
+
+msgid "Scan Additional Tables"
+msgstr "Zusätzliche Tabellen scannen"
+
+msgid "Scan and optimize images outside the Media Library"
+msgstr "Bilder außerhalb der Mediathek scannen und optimieren"
+
+msgid "Scan complete!"
+msgstr "Scan abgeschlossen!"
+
+msgid "Scan files"
+msgstr "Dateien scannen"
+
+msgid "Scanned Media"
+msgstr "Gescannte Medien"
+
+msgid "Scanning Media Library..."
+msgstr "Scanne Mediathek..."
+
+msgid "Search by file or post..."
+msgstr "Nach Datei oder Beitrag suchen..."
+
+msgid "Search full-page output buffer (ob_start)"
+msgstr "Vollständigen Seitenpuffer durchsuchen (ob_start)"
+
+msgid "Searches all tables containing text or JSON columns for image IDs, relative paths, and filenames. Log, cache, and statistics tables are skipped automatically."
+msgstr "Durchsucht alle Tabellen mit Text- und JSON-Spalten nach Bild-IDs, relativen Pfaden und Dateinamen. Log-, Cache- und Statistik-Tabellen werden automatisch übersprungen."
+
+msgid "Searching database for images..."
+msgstr "Durchsuche die Datenbank nach Bildern..."
+
+msgid "Server Capabilities & Diagnostics"
+msgstr "Server-Fähigkeiten & Diagnose"
+
+msgid "Server Load Cooldown"
+msgstr "Serverlast-Abkühlung"
+
+msgid "Server Load Safeguard (Max Load)"
+msgstr "Serverlast-Schutzwall (Max. Load)"
+
+msgid "Server load too high (%1$s > %2$s). Cooldown pause active."
+msgstr "Serverlast zu hoch (%1$s > %2$s). Abkühlpause (Cooldown) aktiv."
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Settings saved successfully."
+msgstr "Einstellungen wurden erfolgreich gespeichert."
+
+msgid "Show detailed system log"
+msgstr "Detailliertes System-Protokoll anzeigen"
+
+msgid "Site Icon (Browser Favicon)"
+msgstr "Website-Icon (Browser Favicon)"
+
+msgid "Site Logo (FSE Block Theme)"
+msgstr "Website-Logo (FSE Block Theme)"
+
+msgid "Skip already checked media"
+msgstr "Bereits geprüfte Medien überspringen"
+
+msgid "Slider Revolution: \"%1$s\" (Slide #%2$d)"
+msgstr "Slider Revolution: \"%1$s\" (Slide #%2$d)"
+
+msgid "Smart (Balanced - approx. 82% quality)"
+msgstr "Smart (Ausgewogen - ca. 82% Qualität)"
+
+msgid "Smart (Recommended: ~82% quality, visually lossless)"
+msgstr "Smart (Empfohlen: ~82% Qualität, visuell perfekt)"
+
+msgid "Smart (~82% quality, maximum savings)"
+msgstr "Smart (~82% Qualität, maximale Ersparnis)"
+
+msgid "Smart Slider 3 (Project background): \"%1$s\" (#%2$d)"
+msgstr "Smart Slider 3 (Projekt-Hintergrund): \"%1$s\" (#%2$d)"
+
+msgid "Smart Slider 3: \"%1$s\" (Slide: \"%2$s\", #%3$d)"
+msgstr "Smart Slider 3: \"%1$s\" (Slide: \"%2$s\", #%3$d)"
+
+msgid "Standard (Balanced: 10 images / step, 300ms pause)"
+msgstr "Standard (Ausgewogen: 10 Bilder / Schritt, 300ms Pause)"
+
+msgid "Start Background Scan"
+msgstr "Hintergrund-Scan starten"
+
+msgid "Start Bulk Optimization Now"
+msgstr "Massenoptimierung jetzt starten"
+
+msgid "Start Bulk Processing"
+msgstr "Massenverarbeitung starten"
+
+msgid "Start Full Scan"
+msgstr "Vollständigen Scan starten"
+
+msgid "Start Scan Now"
+msgstr "Scan jetzt starten"
+
+msgid "Still Unoptimized"
+msgstr "Noch Unoptimiert"
+
+msgid "Stop deep scan as soon as an image is confirmed as used (Recommended)"
+msgstr "Tiefenscan abbrechen, sobald ein Bild nachweislich verwendet wird (Empfohlen)"
+
+msgid "Sub-Size Optimization (Thumbnails)"
+msgstr "Zwischengrößen-Optimierung (Thumbnails)"
+
+msgid "Table \"%s\""
+msgstr "Tabelle \"%s\""
+
+msgid "The Media Auditor scans your entire WordPress Media Library to verify whether images are actually used on your site. It checks featured images, WooCommerce product galleries, post/page content (including Gutenberg blocks & <img> tags), page builders, site logos, favicons, and taxonomies."
+msgstr "Der Medien-Auditor scannt deine gesamte WordPress-Mediathek und prüft, ob Bilder tatsächlich auf deiner Website verwendet werden. Geprüft werden Beitragsbilder, WooCommerce-Produktgalerien, Inhalte aller Seiten/Beiträge (inkl. Gutenberg-Blöcke & <img>-Tags), Page-Builder, Website-Logos, Favicons und Taxonomien."
+
+msgid "Theme & Custom Folders"
+msgstr "Theme- & Benutzerdefinierte Ordner"
+
+msgid "Theme & Custom Folders:"
+msgstr "Theme- & Benutzerdefinierte Ordner:"
+
+msgid "Theme Background Image (Customizer)"
+msgstr "Theme Hintergrundbild (Customizer)"
+
+msgid "Theme Header Image (Customizer)"
+msgstr "Theme Header-Bild (Customizer)"
+
+msgid "This image has not been optimized yet."
+msgstr "Dieses Bild wurde noch nicht optimiert."
+
+msgid "Total Media Library"
+msgstr "Mediathek Gesamt"
+
+msgid "Total Storage (Before → After)"
+msgstr "Speicherplatz Gesamt (Vorher → Nachher)"
+
+msgid "Trash"
+msgstr "Papierkorb"
+
+msgid "Turbo (Fast: 25 images / step, 50ms pause – for powerful servers)"
+msgstr "Turbo (Schnell: 25 Bilder / Schritt, 50ms Pause – für starke Server)"
+
+msgid "Ultra (Aggressive - approx. 72% quality)"
+msgstr "Ultra (Aggressiv - ca. 72% Qualität)"
+
+msgid "Ultra (~72% quality, aggressive)"
+msgstr "Ultra (~72% Qualität, aggressiv)"
+
+msgid "Ultra (~72% quality, ultra compact)"
+msgstr "Ultra (~72% Qualität, extrem klein)"
+
+msgid "Uninstall Safeguard (HA Standard)"
+msgstr "Deinstallations-Schutzwall (HA-Standard)"
+
+msgid "Universal DB Scan: Active"
+msgstr "Universeller DB-Scan: Aktiv"
+
+msgid "Universal Database Scan"
+msgstr "Universeller Datenbank-Scan"
+
+msgid "Unknown"
+msgstr "Unbekannt"
+
+msgid "Unoptimized"
+msgstr "Unoptimiert"
+
+msgid "Usage Status"
+msgstr "Verwendungs-Status"
+
+msgid "Used Storage"
+msgstr "Belegter Speicher"
+
+msgid "Used in %1$s"
+msgstr "Verwendet in %1$s"
+
+msgid "Used in theme file: \"%s\""
+msgstr "Verwendet in Theme-Datei: \"%s\""
+
+msgid "User profile / avatar (\"%1$s\") of %2$s (#%3$d)"
+msgstr "Benutzerprofil/Avatar (\"%1$s\") von %2$s (#%3$d)"
+
+msgid "Uses global default settings"
+msgstr "Verwendet globale Standardeinstellungen"
+
+msgid "View"
+msgstr "Ansehen"
+
+msgid "Waiting for night window"
+msgstr "Wartet auf Nachtfenster"
+
+msgid "Waiting for night window (%1$s – %2$s). Current server time: %3$s."
+msgstr "Wartet auf Nacht-Zeitfenster (%1$s – %2$s Uhr). Aktuelle Serverzeit: %3$s Uhr."
+
+msgid "Warning: MEDIA_TRASH is disabled in WordPress. All selected images will be permanently deleted (backups are created under /ha-backups/). Continue?"
+msgstr "Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Alle ausgewählten Bilder werden dauerhaft gelöscht (Backups werden unter /ha-backups/ angelegt). Fortfahren?"
+
+msgid "Warning: MEDIA_TRASH is disabled in WordPress. This image will be permanently deleted immediately (a backup is created under /ha-backups/ first). Continue?"
+msgstr "Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Dieses Bild wird sofort dauerhaft gelöscht (ein Backup wird vorher unter /ha-backups/ angelegt). Fortfahren?"
+
+msgid "We recommend \"Lossless\" so your master photo retains maximum quality."
+msgstr "Wir empfehlen \"Verlustfrei\", damit dein Master-Foto in höchster Qualität erhalten bleibt."
+
+msgid "Web Server:"
+msgstr "Webserver:"
+
+msgid "WebP Support:"
+msgstr "WebP Unterstützung:"
+
+msgid "Width:"
+msgstr "Breite:"
+
+msgid "WooCommerce product gallery in \"%1$s\" (#%2$d)"
+msgstr "WooCommerce Produktgalerie in \"%1$s\" (#%2$d)"
+
+msgid "WordPress Option (\"%s\")"
+msgstr "WordPress Option (\"%s\")"
+
+msgid "WordPress Widget (\"%s\")"
+msgstr "WordPress Widget (\"%s\")"
+
+msgid "Writes rules to wp-content/uploads/.htaccess. Apache serves WebP transparently."
+msgstr "Schreibt Regeln in wp-content/uploads/.htaccess. Apache liefert WebP transparent aus."
+
+msgid "days"
+msgstr "Tage"
+
+msgid "optimized"
+msgstr "optimiert"
+
+msgid "remaining"
+msgstr "noch offen"
+
+msgid "saved"
+msgstr "gespart"
+
+msgid "to:"
+msgstr "bis:"
+
+msgid "⚡ Bulk Optimization"
+msgstr "⚡ Massenoptimierung"
+
+msgid "🔍 Orphaned Media"
+msgstr "🔍 Verwaiste Medien"
+
+msgid "🗑️ Delete (with Backup)"
+msgstr "🗑️ Löschen (mit Backup)"
+
+msgid "🗑️ Delete Selected (Backup)"
+msgstr "🗑️ Ausgewählte löschen (Backup)"
+
+msgid "🗑️ Move Selected to Trash"
+msgstr "🗑️ Ausgewählte in Papierkorb"
+
+msgid "🗑️ Trash"
+msgstr "🗑️ Papierkorb"
+
+msgid "🛡️ Protection active: Uploaded %1$d days ago (protected against accidental deletion, period: %2$d days)"
+msgstr "🛡️ Schutzfrist aktiv: Vor %1$d Tagen hochgeladen (Schutz vor versehentlichem Löschen, Frist: %2$d Tage)"

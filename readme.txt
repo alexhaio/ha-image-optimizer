@@ -2,10 +2,10 @@
 Contributors: alexhaio
 Donate link: https://seo-hacker.de/
 Tags: image optimizer, webp, avif, compression, performance, media library
-Requires at least: 6.0
+Requires at least: 6.6
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.1.1
+Stable tag: 2.2.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,10 @@ Nein. Das Plugin arbeitet zu 100% lokal auf deinem Webserver über PHP Imagick o
 Gemäß den HA-Standards werden deine Backups und WebP-Dateien standardmäßig geschützt und nicht gelöscht. In den Einstellungen gibt es einen expliziten Schalter für die vollständige Bereinigung bei Deinstallation.
 
 == Changelog ==
+
+= 2.2.0 =
+* Refactor (i18n & HA-Standard): Vollständige Umstellung aller Quellcode-Texte in `src/`, `templates/` und `ha-image-optimizer.php` auf Englisch als Quellsprache mit aktualisiertem `.pot`-Template sowie vollständigen `de_DE`- und `de_DE_formal`-Übersetzungen (`.po`, `.mo`, `.l10n.php`) und 24 weiteren Sprachpaketen.
+* Chore (Kompatibilität & Packaging): `Requires at least` auf `6.6` angehoben (passend zum `lang_dir_for_domain`-JIT-Loader) und `.distignore` ergänzt.
 
 = 2.1.1 =
 * Fix (Admin-Einstellungen): Behebung eines PHP Fatal Errors (`Class "MediaAuditor" not found`) in `templates/admin-settings.php` durch vollständig qualifizierten Namespace-Aufruf.

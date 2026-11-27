@@ -26,9 +26,9 @@ enum DeliveryMode: string {
 	 */
 	public function label(): string {
 		return match ( $this ) {
-			self::CONTENT_FILTER => __( '<picture>-Tag Ersetzung (Universell & CDN-sicher)', 'ha-image-optimizer' ),
-			self::HTACCESS       => __( '.htaccess Server-Rewrite (0 ms PHP-Overhead, Apache & LiteSpeed)', 'ha-image-optimizer' ),
-			self::OFF            => __( 'Deaktiviert (Bilder werden nicht automatisch ersetzt)', 'ha-image-optimizer' ),
+			self::CONTENT_FILTER => __( '<picture> tag replacement (Universal & CDN-safe)', 'ha-image-optimizer' ),
+			self::HTACCESS       => __( '.htaccess Server Rewrite (0 ms PHP overhead, Apache & LiteSpeed)', 'ha-image-optimizer' ),
+			self::OFF            => __( 'Disabled (images are not replaced automatically)', 'ha-image-optimizer' ),
 		};
 	}
 }

@@ -45,19 +45,19 @@ class AdminPage {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( admin_url( 'options-general.php?page=ha-image-optimizer' ) ),
-			esc_html__( 'Einstellungen', 'ha-image-optimizer' )
+			esc_html__( 'Settings', 'ha-image-optimizer' )
 		);
 
 		$bulk_link = sprintf(
 			'<a href="%s" style="font-weight: 600; color: #1a7f37;">%s</a>',
 			esc_url( admin_url( 'upload.php?page=ha-image-optimizer-bulk' ) ),
-			esc_html__( '⚡ Massenoptimierung', 'ha-image-optimizer' )
+			esc_html__( '⚡ Bulk Optimization', 'ha-image-optimizer' )
 		);
 
 		$auditor_link = sprintf(
 			'<a href="%s" style="color: #8250df;">%s</a>',
 			esc_url( admin_url( 'upload.php?page=ha-image-optimizer-auditor' ) ),
-			esc_html__( '🔍 Verwaiste Medien', 'ha-image-optimizer' )
+			esc_html__( '🔍 Orphaned Media', 'ha-image-optimizer' )
 		);
 
 		array_unshift( $links, $auditor_link );
@@ -84,8 +84,8 @@ class AdminPage {
 
 		// Bulk Optimizer under Media
 		add_media_page(
-			esc_html__( 'Massenoptimierung', 'ha-image-optimizer' ),
-			esc_html__( 'Massenoptimierung', 'ha-image-optimizer' ),
+			esc_html__( 'Bulk Optimization', 'ha-image-optimizer' ),
+			esc_html__( 'Bulk Optimization', 'ha-image-optimizer' ),
 			'manage_options',
 			'ha-image-optimizer-bulk',
 			[ __CLASS__, 'render_bulk_page' ]
@@ -93,8 +93,8 @@ class AdminPage {
 
 		// Media Auditor under Media
 		add_media_page(
-			esc_html__( 'Verwaiste Medien', 'ha-image-optimizer' ),
-			esc_html__( 'Verwaiste Medien', 'ha-image-optimizer' ),
+			esc_html__( 'Orphaned Media', 'ha-image-optimizer' ),
+			esc_html__( 'Orphaned Media', 'ha-image-optimizer' ),
 			'manage_options',
 			'ha-image-optimizer-auditor',
 			[ __CLASS__, 'render_auditor_page' ]
@@ -142,14 +142,14 @@ class AdminPage {
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'ha_io_admin_nonce' ),
 			'i18n'     => [
-				'optimizing'   => esc_html__( 'Optimiere...', 'ha-image-optimizer' ),
-				'restoring'    => esc_html__( 'Stelle wieder her...', 'ha-image-optimizer' ),
-				'completed'    => esc_html__( 'Optimierung abgeschlossen!', 'ha-image-optimizer' ),
-				'error'        => esc_html__( 'Ein Fehler ist aufgetreten.', 'ha-image-optimizer' ),
-				'confirm_rest' => esc_html__( 'Möchtest du das Originalbild wirklich wiederherstellen?', 'ha-image-optimizer' ),
-				'pause'        => esc_html__( 'Pausieren', 'ha-image-optimizer' ),
-				'resume'       => esc_html__( 'Fortsetzen', 'ha-image-optimizer' ),
-				'saved'        => esc_html__( 'gespart', 'ha-image-optimizer' ),
+				'optimizing'   => esc_html__( 'Optimizing...', 'ha-image-optimizer' ),
+				'restoring'    => esc_html__( 'Restoring...', 'ha-image-optimizer' ),
+				'completed'    => esc_html__( 'Optimization completed!', 'ha-image-optimizer' ),
+				'error'        => esc_html__( 'An error occurred.', 'ha-image-optimizer' ),
+				'confirm_rest' => esc_html__( 'Do you really want to restore the original image?', 'ha-image-optimizer' ),
+				'pause'        => esc_html__( 'Pause', 'ha-image-optimizer' ),
+				'resume'       => esc_html__( 'Resume', 'ha-image-optimizer' ),
+				'saved'        => esc_html__( 'saved', 'ha-image-optimizer' ),
 			],
 		] );
 
@@ -174,37 +174,37 @@ class AdminPage {
 				'pacing'              => $pacing,
 				'media_trash_enabled' => MediaAuditor::is_media_trash_enabled(),
 				'i18n'                => [
-					'scanning'          => esc_html__( 'Scanne Mediathek...', 'ha-image-optimizer' ),
-					'completed'         => esc_html__( 'Scan abgeschlossen!', 'ha-image-optimizer' ),
-					'error'             => esc_html__( 'Ein Fehler ist aufgetreten.', 'ha-image-optimizer' ),
+					'scanning'          => esc_html__( 'Scanning Media Library...', 'ha-image-optimizer' ),
+					'completed'         => esc_html__( 'Scan complete!', 'ha-image-optimizer' ),
+					'error'             => esc_html__( 'An error occurred.', 'ha-image-optimizer' ),
 					'confirm_trash'     => MediaAuditor::is_media_trash_enabled()
-						? esc_html__( 'Dieses Bild wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' )
-						: esc_html__( 'Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Dieses Bild wird sofort dauerhaft gelöscht (ein Backup wird vorher unter /ha-backups/ angelegt). Fortfahren?', 'ha-image-optimizer' ),
+						? esc_html__( 'Really move this image to the Trash?', 'ha-image-optimizer' )
+						: esc_html__( 'Warning: MEDIA_TRASH is disabled in WordPress. This image will be permanently deleted immediately (a backup is created under /ha-backups/ first). Continue?', 'ha-image-optimizer' ),
 					'confirm_bulk'      => MediaAuditor::is_media_trash_enabled()
-						? esc_html__( 'Alle ausgewählten Bilder wirklich in den Papierkorb verschieben?', 'ha-image-optimizer' )
-						: esc_html__( 'Achtung: MEDIA_TRASH ist in WordPress deaktiviert. Alle ausgewählten Bilder werden dauerhaft gelöscht (Backups werden unter /ha-backups/ angelegt). Fortfahren?', 'ha-image-optimizer' ),
-					'trashed'           => esc_html__( 'In Papierkorb verschoben', 'ha-image-optimizer' ),
+						? esc_html__( 'Move all selected images to the Trash?', 'ha-image-optimizer' )
+						: esc_html__( 'Warning: MEDIA_TRASH is disabled in WordPress. All selected images will be permanently deleted (backups are created under /ha-backups/). Continue?', 'ha-image-optimizer' ),
+					'trashed'           => esc_html__( 'Moved to Trash', 'ha-image-optimizer' ),
 					'trash_btn'         => MediaAuditor::is_media_trash_enabled()
-						? esc_html__( '🗑️ Papierkorb', 'ha-image-optimizer' )
-						: esc_html__( '🗑️ Löschen (mit Backup)', 'ha-image-optimizer' ),
+						? esc_html__( '🗑️ Trash', 'ha-image-optimizer' )
+						: esc_html__( '🗑️ Delete (with Backup)', 'ha-image-optimizer' ),
 					'bulk_trash_btn'    => MediaAuditor::is_media_trash_enabled()
-						? esc_html__( '🗑️ Ausgewählte in Papierkorb', 'ha-image-optimizer' )
-						: esc_html__( '🗑️ Ausgewählte löschen (Backup)', 'ha-image-optimizer' ),
-					'resume_scan'       => esc_html__( 'Scan fortsetzen / Ungescannte prüfen', 'ha-image-optimizer' ),
-					'full_scan'         => esc_html__( 'Vollständigen Scan starten', 'ha-image-optimizer' ),
-					'start_scan'        => esc_html__( 'Scan jetzt starten', 'ha-image-optimizer' ),
-					'all_scanned'       => esc_html__( 'Alle Medien sind bereits geprüft! Keine ungescannten Dateien vorhanden.', 'ha-image-optimizer' ),
-					'bg_start_scan'     => esc_html__( 'Hintergrund-Scan starten', 'ha-image-optimizer' ),
-					'bg_resume_scan'    => esc_html__( 'Hintergrund-Scan fortsetzen', 'ha-image-optimizer' ),
-					'bg_started'        => esc_html__( 'Hintergrund-Scan wurde gestartet.', 'ha-image-optimizer' ),
-					'bg_paused'         => esc_html__( 'Hintergrund-Scan pausiert.', 'ha-image-optimizer' ),
-					'bg_resumed'        => esc_html__( 'Hintergrund-Scan fortgesetzt.', 'ha-image-optimizer' ),
-					'bg_cancelled'      => esc_html__( 'Hintergrund-Scan abgebrochen.', 'ha-image-optimizer' ),
-					'confirm_cancel'    => esc_html__( 'Möchtest du den laufenden Hintergrund-Scan wirklich abbrechen?', 'ha-image-optimizer' ),
-					'running'           => esc_html__( 'Läuft', 'ha-image-optimizer' ),
-					'waiting_night'     => esc_html__( 'Wartet auf Nachtfenster', 'ha-image-optimizer' ),
-					'cooldown'          => esc_html__( 'Serverlast-Abkühlung', 'ha-image-optimizer' ),
-					'paused'            => esc_html__( 'Pausiert', 'ha-image-optimizer' ),
+						? esc_html__( '🗑️ Move Selected to Trash', 'ha-image-optimizer' )
+						: esc_html__( '🗑️ Delete Selected (Backup)', 'ha-image-optimizer' ),
+					'resume_scan'       => esc_html__( 'Resume Scan / Check Unscanned', 'ha-image-optimizer' ),
+					'full_scan'         => esc_html__( 'Start Full Scan', 'ha-image-optimizer' ),
+					'start_scan'        => esc_html__( 'Start Scan Now', 'ha-image-optimizer' ),
+					'all_scanned'       => esc_html__( 'All media have already been checked! No unscanned files remaining.', 'ha-image-optimizer' ),
+					'bg_start_scan'     => esc_html__( 'Start Background Scan', 'ha-image-optimizer' ),
+					'bg_resume_scan'    => esc_html__( 'Resume Background Scan', 'ha-image-optimizer' ),
+					'bg_started'        => esc_html__( 'Background scan was started.', 'ha-image-optimizer' ),
+					'bg_paused'         => esc_html__( 'Background scan paused.', 'ha-image-optimizer' ),
+					'bg_resumed'        => esc_html__( 'Background scan resumed.', 'ha-image-optimizer' ),
+					'bg_cancelled'      => esc_html__( 'Background scan cancelled.', 'ha-image-optimizer' ),
+					'confirm_cancel'    => esc_html__( 'Do you really want to cancel the running background scan?', 'ha-image-optimizer' ),
+					'running'           => esc_html__( 'Running', 'ha-image-optimizer' ),
+					'waiting_night'     => esc_html__( 'Waiting for night window', 'ha-image-optimizer' ),
+					'cooldown'          => esc_html__( 'Server Load Cooldown', 'ha-image-optimizer' ),
+					'paused'            => esc_html__( 'Paused', 'ha-image-optimizer' ),
 				],
 			] );
 		}
@@ -221,7 +221,7 @@ class AdminPage {
 	 */
 	public static function render_settings_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) );
+			wp_die( esc_html__( 'Permission denied.', 'ha-image-optimizer' ) );
 		}
 
 		$settings     = Settings::get_all();
@@ -242,7 +242,7 @@ class AdminPage {
 	 */
 	public static function render_bulk_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) );
+			wp_die( esc_html__( 'Permission denied.', 'ha-image-optimizer' ) );
 		}
 
 		$stats        = ProgressTracker::get_stats();
@@ -261,7 +261,7 @@ class AdminPage {
 	 */
 	public static function render_auditor_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) );
+			wp_die( esc_html__( 'Permission denied.', 'ha-image-optimizer' ) );
 		}
 
 		$audit_data    = MediaAuditor::get_cached_results();
@@ -283,7 +283,7 @@ class AdminPage {
 		check_admin_referer( 'ha_io_save_settings_action', 'ha_io_nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ), 403 );
+			wp_die( esc_html__( 'Permission denied.', 'ha-image-optimizer' ), 403 );
 		}
 
 		$raw = isset( $_POST['ha_io_settings'] ) ? (array) wp_unslash( $_POST['ha_io_settings'] ) : [];

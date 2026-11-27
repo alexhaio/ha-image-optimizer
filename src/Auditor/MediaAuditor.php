@@ -192,9 +192,9 @@ class MediaAuditor {
 				$default_ref = [
 					'label' => $is_gallery
 						/* translators: 1: post title, 2: post ID, 3: post type label */
-						? sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label )
+						? sprintf( __( 'Embedded in content (Gallery) of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label )
 						/* translators: 1: post title, 2: post ID, 3: post type label */
-						: sprintf( __( 'Eingebunden im Inhalt von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+						: sprintf( __( 'Embedded in content of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 					'url'   => $edit_url,
 				];
 
@@ -226,7 +226,7 @@ class MediaAuditor {
 							if ( $g_id > 0 ) {
 								$by_id[ $g_id ][] = [
 									/* translators: 1: post title, 2: post ID, 3: post type label */
-									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+									'label' => sprintf( __( 'Embedded in content (Gallery) of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 									'url'   => $edit_url,
 								];
 							}
@@ -242,7 +242,7 @@ class MediaAuditor {
 							if ( $g_id > 0 ) {
 								$by_id[ $g_id ][] = [
 									/* translators: 1: post title, 2: post ID, 3: post type label */
-									'label' => sprintf( __( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
+									'label' => sprintf( __( 'Embedded in content (Gallery) of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ), $title, $post_id, $type_label ),
 									'url'   => $edit_url,
 								];
 							}
@@ -857,7 +857,7 @@ class MediaAuditor {
 		if ( ! $post || 'attachment' !== $post->post_type ) {
 			return [
 				'id'     => $attachment_id,
-				'error'  => __( 'Attachment nicht gefunden.', 'ha-image-optimizer' ),
+				'error'  => __( 'Attachment not found.', 'ha-image-optimizer' ),
 				'status' => self::STATUS_UNATTACHED_UNUSED,
 			];
 		}
@@ -886,7 +886,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: post title, 2: post ID */
-						__( 'Automatische Galerie in übergeordnetem Beitrag "%1$s" (#%2$d)', 'ha-image-optimizer' ),
+						__( 'Automatic gallery in parent post "%1$s" (#%2$d)', 'ha-image-optimizer' ),
 						$parent_title ?: ( 'ID ' . $parent_id ),
 						$parent_id
 					),
@@ -933,7 +933,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: post title, 2: post ID, 3: post type */
-						__( 'Beitragsbild in "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
+						__( 'Featured image in "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
 						$title,
 						$post_id,
 						$fp->post_type ?? 'post'
@@ -977,7 +977,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: product title, 2: product ID */
-						__( 'WooCommerce Produktgalerie in "%1$s" (#%2$d)', 'ha-image-optimizer' ),
+						__( 'WooCommerce product gallery in "%1$s" (#%2$d)', 'ha-image-optimizer' ),
 						$title,
 						$post_id
 					),
@@ -996,7 +996,7 @@ class MediaAuditor {
 		$site_icon = (int) get_option( 'site_icon', 0 );
 		if ( $site_icon === $attachment_id ) {
 			$references[] = [
-				'label' => __( 'Website-Icon (Browser Favicon)', 'ha-image-optimizer' ),
+				'label' => __( 'Site Icon (Browser Favicon)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'customize.php?autofocus[section]=title_tagline' ),
 			];
 		}
@@ -1004,7 +1004,7 @@ class MediaAuditor {
 		$custom_logo = (int) get_theme_mod( 'custom_logo', 0 );
 		if ( $custom_logo === $attachment_id ) {
 			$references[] = [
-				'label' => __( 'Offizielles Website-Logo (Theme Header)', 'ha-image-optimizer' ),
+				'label' => __( 'Official Site Logo (Theme Header)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'customize.php?autofocus[control]=custom_logo' ),
 			];
 		}
@@ -1012,7 +1012,7 @@ class MediaAuditor {
 		$site_logo = (int) get_option( 'site_logo', 0 );
 		if ( $site_logo === $attachment_id && $custom_logo !== $attachment_id ) {
 			$references[] = [
-				'label' => __( 'Website-Logo (FSE Block Theme)', 'ha-image-optimizer' ),
+				'label' => __( 'Site Logo (FSE Block Theme)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'site-editor.php' ),
 			];
 		}
@@ -1043,7 +1043,7 @@ class MediaAuditor {
 		}
 		if ( $is_header_match ) {
 			$references[] = [
-				'label' => __( 'Theme Header-Bild (Customizer)', 'ha-image-optimizer' ),
+				'label' => __( 'Theme Header Image (Customizer)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'customize.php?autofocus[control]=header_image' ),
 			];
 		}
@@ -1069,7 +1069,7 @@ class MediaAuditor {
 		}
 		if ( $is_bg_match ) {
 			$references[] = [
-				'label' => __( 'Theme Hintergrundbild (Customizer)', 'ha-image-optimizer' ),
+				'label' => __( 'Theme Background Image (Customizer)', 'ha-image-optimizer' ),
 				'url'   => self::safe_admin_url( 'customize.php?autofocus[control]=background_image' ),
 			];
 		}
@@ -1105,7 +1105,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: category name, 2: taxonomy name */
-						__( 'Kategorie-Vorschaubild in "%1$s" (%2$s)', 'ha-image-optimizer' ),
+						__( 'Category thumbnail in "%1$s" (%2$s)', 'ha-image-optimizer' ),
 						$tr->name ?? 'Kategorie',
 						$tax
 					),
@@ -1274,14 +1274,14 @@ class MediaAuditor {
 				$label = $is_gallery
 					? sprintf(
 						/* translators: 1: post title, 2: post ID, 3: post type */
-						__( 'Eingebunden im Inhalt (Galerie) von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
+						__( 'Embedded in content (Gallery) of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
 						$title,
 						$post_id,
 						$type_label
 					)
 					: sprintf(
 						/* translators: 1: post title, 2: post ID, 3: post type */
-						__( 'Eingebunden im Inhalt von "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
+						__( 'Embedded in content of "%1$s" (#%2$d, %3$s)', 'ha-image-optimizer' ),
 						$title,
 						$post_id,
 						$type_label
@@ -1434,7 +1434,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: field name, 2: post title, 3: post ID, 4: post type */
-						__( 'Benutzerdefiniertes Feld / ACF ("%1$s") in "%2$s" (#%3$d, %4$s)', 'ha-image-optimizer' ),
+						__( 'Custom Field / ACF ("%1$s") in "%2$s" (#%3$d, %4$s)', 'ha-image-optimizer' ),
 						$ap->meta_key ?? 'Custom Field',
 						$title,
 						$post_id,
@@ -1513,7 +1513,7 @@ class MediaAuditor {
 				$references[] = [
 					'label' => sprintf(
 						/* translators: 1: meta key, 2: post title, 3: post ID */
-						__( 'Beitragsfeld ("%1$s") in "%2$s" (#%3$d)', 'ha-image-optimizer' ),
+						__( 'Post meta ("%1$s") in "%2$s" (#%3$d)', 'ha-image-optimizer' ),
 						$opm->meta_key,
 						$title,
 						$post_id
@@ -1556,7 +1556,7 @@ class MediaAuditor {
 					$references[] = [
 						'label' => sprintf(
 							/* translators: 1: meta key, 2: display name, 3: user ID */
-							__( 'Benutzerprofil/Avatar ("%1$s") von %2$s (#%3$d)', 'ha-image-optimizer' ),
+							__( 'User profile / avatar ("%1$s") of %2$s (#%3$d)', 'ha-image-optimizer' ),
 							$ur->meta_key,
 							$name,
 							(int) $ur->user_id
@@ -1579,7 +1579,7 @@ class MediaAuditor {
 			$references[] = [
 				'label' => sprintf(
 					/* translators: %s: theme file name */
-					__( 'Verwendet in Theme-Datei: "%s"', 'ha-image-optimizer' ),
+					__( 'Used in theme file: "%s"', 'ha-image-optimizer' ),
 					$theme_file
 				),
 				'url'   => self::safe_admin_url( 'theme-editor.php' ),
@@ -1714,7 +1714,7 @@ class MediaAuditor {
 							$references[] = [
 								'label' => sprintf(
 									/* translators: 1: slider title, 2: slider ID */
-									__( 'Smart Slider 3 (Projekt-Hintergrund): "%1$s" (#%2$d)', 'ha-image-optimizer' ),
+									__( 'Smart Slider 3 (Project background): "%1$s" (#%2$d)', 'ha-image-optimizer' ),
 									$slider_title,
 									$slider_id
 								),
@@ -1968,14 +1968,14 @@ class MediaAuditor {
 						} elseif ( ! empty( $row_id ) ) {
 							$label = sprintf(
 								/* translators: 1: table label, 2: row ID */
-								__( '%1$s: Eintrag #%2$s', 'ha-image-optimizer' ),
+								__( '%1$s: Entry #%2$s', 'ha-image-optimizer' ),
 								$base_lbl,
 								$row_id
 							);
 						} else {
 							$label = sprintf(
 								/* translators: 1: table label */
-								__( 'Verwendet in %1$s', 'ha-image-optimizer' ),
+								__( 'Used in %1$s', 'ha-image-optimizer' ),
 								$base_lbl
 							);
 						}
@@ -2090,7 +2090,7 @@ class MediaAuditor {
 					$references[] = [
 						'label' => sprintf(
 							/* translators: 1: age in days, 2: configured safety period */
-							__( '🛡️ Schutzfrist aktiv: Vor %1$d Tagen hochgeladen (Schutz vor versehentlichem Löschen, Frist: %2$d Tage)', 'ha-image-optimizer' ),
+							__( '🛡️ Protection active: Uploaded %1$d days ago (protected against accidental deletion, period: %2$d days)', 'ha-image-optimizer' ),
 							max( 0, $age_days ),
 							$safety_days
 						),
@@ -2368,7 +2368,7 @@ class MediaAuditor {
 
 			$clean_name = str_replace( $prefix, '', $table );
 			/* translators: %s: database table name without prefix */
-			$label      = sprintf( __( 'Tabelle "%s"', 'ha-image-optimizer' ), $clean_name );
+			$label      = sprintf( __( 'Table "%s"', 'ha-image-optimizer' ), $clean_name );
 
 			$discovered[ $table ] = [
 				'columns'      => $text_columns,

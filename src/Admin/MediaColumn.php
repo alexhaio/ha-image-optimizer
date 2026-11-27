@@ -88,12 +88,12 @@ class MediaColumn {
 			?>
 			<div class="ha-io-col-unoptimized" data-id="<?php echo esc_attr( $post_id ); ?>">
 				<div class="ha-io-status-row">
-					<span class="ha-io-badge ha-io-badge-gray"><?php esc_html_e( 'Unoptimiert', 'ha-image-optimizer' ); ?></span>
+					<span class="ha-io-badge ha-io-badge-gray"><?php esc_html_e( 'Unoptimized', 'ha-image-optimizer' ); ?></span>
 					<?php if ( $total_unopt > 0 ) : ?>
 						<?php
 						$unopt_title = sprintf(
 							/* translators: 1: original file size, 2: number of intermediate sizes, 3: total file size */
-							__( 'Original: %1$s, Gesamt inkl. %2$d Zwischengrößen: %3$s', 'ha-image-optimizer' ),
+							__( 'Original: %1$s, Total incl. %2$d sub-sizes: %3$s', 'ha-image-optimizer' ),
 							SizeGuard::format_size( $file_size, 1 ),
 							$sizes_count,
 							SizeGuard::format_size( $total_unopt, 1 )
@@ -115,17 +115,17 @@ class MediaColumn {
 				<?php endif; ?>
 
 				<div class="ha-io-level-select-wrap">
-					<select class="ha-io-level-select" data-id="<?php echo esc_attr( $post_id ); ?>" title="<?php esc_attr_e( 'Komprimierungsstufe für dieses Bild', 'ha-image-optimizer' ); ?>">
-						<option value="default"><?php esc_html_e( 'Standard (Global)', 'ha-image-optimizer' ); ?></option>
-						<option value="ultra"><?php esc_html_e( 'Hoch (Maximal)', 'ha-image-optimizer' ); ?></option>
-						<option value="smart"><?php esc_html_e( 'Mittel (Ausgewogen)', 'ha-image-optimizer' ); ?></option>
-						<option value="lossless"><?php esc_html_e( 'Niedrig (Verlustfrei)', 'ha-image-optimizer' ); ?></option>
+					<select class="ha-io-level-select" data-id="<?php echo esc_attr( $post_id ); ?>" title="<?php esc_attr_e( 'Compression level for this image', 'ha-image-optimizer' ); ?>">
+						<option value="default"><?php esc_html_e( 'Default (Global)', 'ha-image-optimizer' ); ?></option>
+						<option value="ultra"><?php esc_html_e( 'High (Maximum)', 'ha-image-optimizer' ); ?></option>
+						<option value="smart"><?php esc_html_e( 'Medium (Balanced)', 'ha-image-optimizer' ); ?></option>
+						<option value="lossless"><?php esc_html_e( 'Low (Lossless)', 'ha-image-optimizer' ); ?></option>
 					</select>
 				</div>
 
 				<div class="ha-io-actions">
 					<button type="button" class="button button-small button-primary ha-io-btn-optimize" data-id="<?php echo esc_attr( $post_id ); ?>">
-						<?php esc_html_e( 'Optimieren', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'Optimize', 'ha-image-optimizer' ); ?>
 					</button>
 				</div>
 			</div>
@@ -145,7 +145,7 @@ class MediaColumn {
 		?>
 		<div class="ha-io-col-optimized" data-id="<?php echo esc_attr( $post_id ); ?>">
 			<!-- Before -> After Size Flow -->
-			<div class="ha-io-size-flow" title="<?php esc_attr_e( 'Speicherplatz Gesamt (Vorher → Nachher)', 'ha-image-optimizer' ); ?>">
+			<div class="ha-io-size-flow" title="<?php esc_attr_e( 'Total Storage (Before → After)', 'ha-image-optimizer' ); ?>">
 				<span class="ha-io-size-before"><?php echo esc_html( SizeGuard::format_size( $total_before, 1 ) ); ?></span>
 				<span class="ha-io-size-arrow">→</span>
 				<span class="ha-io-size-after"><strong><?php echo esc_html( SizeGuard::format_size( $total_after, 1 ) ); ?></strong></span>
@@ -155,7 +155,7 @@ class MediaColumn {
 			<?php
 			$saved_title = sprintf(
 				/* translators: 1: saved bytes formatted, 2: saved percentage */
-				__( '%1$s gespart (-%2$s%%)', 'ha-image-optimizer' ),
+				__( '%1$s saved (-%2$s%%)', 'ha-image-optimizer' ),
 				SizeGuard::format_size( $saved_bytes, 1 ),
 				number_format_i18n( $percent, 1 )
 			);
@@ -188,29 +188,29 @@ class MediaColumn {
 			<?php endif; ?>
 
 			<div class="ha-io-level-select-wrap">
-				<select class="ha-io-level-select" data-id="<?php echo esc_attr( $post_id ); ?>" title="<?php esc_attr_e( 'Komprimierungsstufe für dieses Bild', 'ha-image-optimizer' ); ?>">
+				<select class="ha-io-level-select" data-id="<?php echo esc_attr( $post_id ); ?>" title="<?php esc_attr_e( 'Compression level for this image', 'ha-image-optimizer' ); ?>">
 					<option value="default" <?php selected( empty( $custom_level ) ); ?>>
-						<?php esc_html_e( 'Standard (Global)', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'Default (Global)', 'ha-image-optimizer' ); ?>
 					</option>
 					<option value="ultra" <?php selected( $custom_level, 'ultra' ); ?>>
-						<?php esc_html_e( 'Hoch (Maximal)', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'High (Maximum)', 'ha-image-optimizer' ); ?>
 					</option>
 					<option value="smart" <?php selected( $custom_level, 'smart' ); ?>>
-						<?php esc_html_e( 'Mittel (Ausgewogen)', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'Medium (Balanced)', 'ha-image-optimizer' ); ?>
 					</option>
 					<option value="lossless" <?php selected( $custom_level, 'lossless' ); ?>>
-						<?php esc_html_e( 'Niedrig (Verlustfrei)', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'Low (Lossless)', 'ha-image-optimizer' ); ?>
 					</option>
 				</select>
 			</div>
 
 			<div class="ha-io-actions">
 				<a href="#" class="ha-io-btn-optimize" data-id="<?php echo esc_attr( $post_id ); ?>">
-					<?php esc_html_e( 'Neu optimieren', 'ha-image-optimizer' ); ?>
+					<?php esc_html_e( 'Re-optimize', 'ha-image-optimizer' ); ?>
 				</a>
 				<?php if ( $has_backup ) : ?>
 					| <a href="#" class="ha-io-btn-restore" data-id="<?php echo esc_attr( $post_id ); ?>">
-						<?php esc_html_e( 'Wiederherstellen', 'ha-image-optimizer' ); ?>
+						<?php esc_html_e( 'Restore', 'ha-image-optimizer' ); ?>
 					</a>
 				<?php endif; ?>
 			</div>

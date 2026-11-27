@@ -62,12 +62,12 @@ class GdDriver implements OptimizerInterface {
 	 */
 	public function optimize( string $file_path, CompressionLevel $level, bool $keep_exif = false ): OptimizationResult {
 		if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
-			return OptimizationResult::failure( $file_path, __( 'Datei existiert nicht oder ist nicht lesbar.', 'ha-image-optimizer' ) );
+			return OptimizationResult::failure( $file_path, __( 'File does not exist or is not readable.', 'ha-image-optimizer' ) );
 		}
 
 		$original_size = (int) filesize( $file_path );
 		if ( $original_size <= 0 ) {
-			return OptimizationResult::failure( $file_path, __( 'Dateigröße ist 0 Bytes.', 'ha-image-optimizer' ) );
+			return OptimizationResult::failure( $file_path, __( 'File size is 0 bytes.', 'ha-image-optimizer' ) );
 		}
 
 		$mime = wp_check_filetype( $file_path )['type'] ?? '';
@@ -77,7 +77,7 @@ class GdDriver implements OptimizerInterface {
 			return OptimizationResult::skipped(
 				$file_path,
 				$original_size,
-				__( 'Animiertes GIF übersprungen, um Animationsverlust in GD zu verhindern.', 'ha-image-optimizer' )
+				__( 'Animated GIF skipped to prevent animation loss in GD.', 'ha-image-optimizer' )
 			);
 		}
 
@@ -87,7 +87,7 @@ class GdDriver implements OptimizerInterface {
 		try {
 			$image = $this->create_image_from_file( $file_path, $mime );
 			if ( ! $image ) {
-				return OptimizationResult::failure( $file_path, __( 'GD konnte das Bild nicht dekodieren.', 'ha-image-optimizer' ), $original_size );
+				return OptimizationResult::failure( $file_path, __( 'GD could not decode the image.', 'ha-image-optimizer' ), $original_size );
 			}
 
 			$saved = false;
@@ -116,7 +116,7 @@ class GdDriver implements OptimizerInterface {
 				if ( file_exists( $temp_file ) ) {
 					wp_delete_file( $temp_file );
 				}
-				return OptimizationResult::failure( $file_path, __( 'Fehler beim Speichern der optimierten GD-Datei.', 'ha-image-optimizer' ), $original_size );
+				return OptimizationResult::failure( $file_path, __( 'Error saving optimized GD file.', 'ha-image-optimizer' ), $original_size );
 			}
 
 			$new_size = (int) filesize( $temp_file );
@@ -127,7 +127,7 @@ class GdDriver implements OptimizerInterface {
 				return OptimizationResult::skipped(
 					$file_path,
 					$original_size,
-					__( 'Original war bereits kleiner oder gleich groß. Datei beibehalten.', 'ha-image-optimizer' )
+					__( 'Original was already smaller or equal in size. File kept unchanged.', 'ha-image-optimizer' )
 				);
 			}
 

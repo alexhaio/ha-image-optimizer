@@ -2,390 +2,1336 @@
 # This file is distributed under the GPL-3.0.
 msgid ""
 msgstr ""
-"Project-Id-Version: HA Image Optimizer 2.0.1\n"
+"Project-Id-Version: HA Image Optimizer 2.2.0\n"
 "Report-Msgid-Bugs-To: https://github.com/alexhaio/ha-image-optimizer/issues\n"
-"POT-Creation-Date: 2026-10-21T10:00:00+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Alexander Hacker <https://seo-hacker.de/>\n"
-"Language-Team: English <https://seo-hacker.de/>\n"
-"X-Generator: Poedit 3.0\n"
 "X-Domain: ha-image-optimizer\n"
 
-#: ha-image-optimizer.php
-msgid "HA Image Optimizer"
-msgstr "HA Image Optimizer"
+#: templates/admin-settings.php
+msgid "%1$d of %2$d images can still be optimized."
+msgstr ""
 
-#: src/Admin/AdminPage.php
-msgid "Massenoptimierung"
-msgstr "Massenoptimierung"
-
-#: src/Admin/AdminPage.php
-msgid "Einstellungen wurden erfolgreich gespeichert."
-msgstr "Einstellungen wurden erfolgreich gespeichert."
-
-#: src/Admin/AdminPage.php
-msgid "Optimiere..."
-msgstr "Optimiere..."
-
-#: src/Admin/AdminPage.php
-msgid "Stelle wieder her..."
-msgstr "Stelle wieder her..."
-
-#: src/Admin/AdminPage.php
-msgid "Optimierung abgeschlossen!"
-msgstr "Optimierung abgeschlossen!"
-
-#: src/Admin/AdminPage.php
-msgid "Ein Fehler ist aufgetreten."
-msgstr "Ein Fehler ist aufgetreten."
-
-#: src/Admin/AdminPage.php
-msgid "Möchtest du das Originalbild wirklich wiederherstellen?"
-msgstr "Möchtest du das Originalbild wirklich wiederherstellen?"
-
-#: src/Admin/AdminPage.php
-msgid "Pausieren"
-msgstr "Pausieren"
-
-#: src/Admin/AdminPage.php
-msgid "Fortsetzen"
-msgstr "Fortsetzen"
+#: src/Auditor/MediaAuditor.php
+msgid "%1$s in \"%2$s\" (#%3$d)"
+msgstr ""
 
 #: src/Admin/MediaColumn.php
-msgid "HA Optimizer Details"
-msgstr "HA Optimizer Details"
+msgid "%1$s saved (-%2$s%%)"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Unoptimiert"
-msgstr "Unoptimiert"
+#: src/Auditor/MediaAuditor.php
+msgid "%1$s: \"%2$s\""
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Optimieren"
-msgstr "Optimieren"
+#: src/Auditor/MediaAuditor.php
+msgid "%1$s: \"%2$s\" (#%3$s)"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Neu optimieren"
-msgstr "Neu optimieren"
+#: src/Auditor/MediaAuditor.php
+msgid "%1$s: Entry #%2$s"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Wiederherstellen"
-msgstr "Wiederherstellen"
-
-#: src/Admin/AjaxHandler.php
-msgid "Keine ausreichenden Berechtigungen."
-msgstr "Keine ausreichenden Berechtigungen."
-
-#: src/Admin/AjaxHandler.php
-msgid "Ungültige Bild-ID."
-msgstr "Ungültige Bild-ID."
-
-#: src/Admin/AjaxHandler.php
-msgid "Bild erfolgreich optimiert."
-msgstr "Bild erfolgreich optimiert."
-
-#: src/Admin/AjaxHandler.php
-msgid "Originalbild erfolgreich wiederhergestellt."
-msgstr "Originalbild erfolgreich wiederhergestellt."
-
-#: src/Admin/AjaxHandler.php
-msgid "Wiederherstellung fehlgeschlagen (kein Backup vorhanden)."
-msgstr "Wiederherstellung fehlgeschlagen (kein Backup vorhanden)."
-
-#: src/Common/CompressionLevel.php
-msgid "Verlustfrei (Lossless - 100% Schärfe)"
-msgstr "Verlustfrei (Lossless - 100% Schärfe)"
-
-#: src/Common/CompressionLevel.php
-msgid "Smart (Ausgewogen - ca. 82% Qualität)"
-msgstr "Smart (Ausgewogen - ca. 82% Qualität)"
-
-#: src/Common/CompressionLevel.php
-msgid "Ultra (Aggressiv - ca. 72% Qualität)"
-msgstr "Ultra (Aggressiv - ca. 72% Qualität)"
+#: templates/admin-settings.php
+msgid ".htaccess Server Rewrite (0 ms PHP overhead)"
+msgstr ""
 
 #: src/Common/DeliveryMode.php
-msgid "<picture>-Tag Ersetzung (Universell & CDN-sicher)"
-msgstr "<picture>-Tag Ersetzung (Universell & CDN-sicher)"
+msgid ".htaccess Server Rewrite (0 ms PHP overhead, Apache & LiteSpeed)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid ".htaccess supported"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "<picture> tag replacement (Default & Universal)"
+msgstr ""
 
 #: src/Common/DeliveryMode.php
-msgid ".htaccess Server-Rewrite (0 ms PHP-Overhead, Apache & LiteSpeed)"
-msgstr ".htaccess Server-Rewrite (0 ms PHP-Overhead, Apache & LiteSpeed)"
+msgid "<picture> tag replacement (Universal & CDN-safe)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "AVIF Support:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "AVIF is currently not available on your server (requires PHP 8.1+ GD or ImageMagick with AVIF support)."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Actions"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Active Driver:"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Actively used"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Adjust Auditor settings"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+#: templates/media-details-meta-box.php
+msgid "After"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "All"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "All media already checked. No unscanned files found."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "All media have already been checked! No unscanned files remaining."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Already Optimized"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Also catches stubborn page-builder images across the entire HTML output. Recommended when using a caching plugin (WP Rocket, LiteSpeed Cache, etc.)."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "An error occurred."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Analyzing Media Library..."
+msgstr ""
+
+#: src/Engine/GdDriver.php
+msgid "Animated GIF skipped to prevent animation loss in GD."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Attached to: <a href=\"%1$s\" target=\"_blank\" style=\"color: #0969da; text-decoration: underline; font-weight: 500;\">\"%2$s\" (#%3$d) ↗</a>, but not found in content or featured image."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Attached, but unused"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Attached, unused"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Attachment not found."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Audit cache cleared successfully."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Automatic Background Scan"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatic Resizing"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Automatic gallery in parent post \"%1$s\" (#%2$d)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatically convert non-transparent PNGs to JPEG"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatically downscale oversized uploads to maximum:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatically generate AVIF versions (Next-Gen+)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatically generate WebP versions"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Automatically scan all third-party tables (sliders, forms, page builders, plugins)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Available ✅"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Back up unmodified original image in protected backup folder"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Background Tasks (Async)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Background Tasks: Active"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Background scan cancelled."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background scan completed successfully!"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background scan completed successfully! All media items have been analyzed."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Background scan paused."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Background scan resumed."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background scan started (%d media items in queue)..."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background scan was cancelled."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background scan was paused by user."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Background scan was started."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Background tasks are disabled in settings."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Backup & Metadata"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+#: templates/media-details-meta-box.php
+msgid "Before"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/admin-settings.php
+#: templates/bulk-optimizer-page.php
+#: templates/media-auditor-page.php
+msgid "Bulk Optimization"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Bulk optimization processes your entire Media Library or static theme images locally in the background. For each image, the original is optimized losslessly, all intermediate sizes are compressed, and modern WebP/AVIF versions are generated."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Bulk optimization ready:"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Cancel"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Category thumbnail in \"%1$s\" (%2$s)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Change individual compression level:"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Checked: %1$d of %2$d media items (IDs: %3$s)..."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Checks images live in the open browser window via AJAX with pre-indexing and zero-downtime protection."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Clear Cache"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Click \"Start Scan Now\" above to scan your Media Library for unused images."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Complete data deletion on uninstall:"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Completed"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Completely orphaned"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Compress original"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Compression Settings"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Compression for this image:"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Compression level for this image"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Configure how thoroughly the Media Auditor searches your database for image references and how newly uploaded media are protected."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Content pre-indexing for lightning-fast queries (Recommended)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Controls compression of all intermediate web image sizes (thumbnail, medium, large, etc.)."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Could not delete image."
+msgstr ""
+
+#: src/Engine/ImagickDriver.php
+msgid "Could not write temporary file."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Current file:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Current server load: %s"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Current server time: %s"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Currently active: %s. When re-optimizing, the image is recalculated losslessly from the original backup using this level."
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Currently using the global default setting. Choose an individual level (High, Medium, or Low) to compress this image differently."
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Custom Field / ACF (\"%1$s\") in \"%2$s\" (#%3$d, %4$s)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Default (Global setting)"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Default (Global)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Default Level"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Default: themes. Example: themes or uploads/custom-folder"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Delete (Backup)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Delete Selected (Backup)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Delivery Method"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Determines how many images are checked per batch and how long the cooldown pause between queries is."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Directories to scan (one path per line, relative to wp-content):"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Disabled"
+msgstr ""
 
 #: src/Common/DeliveryMode.php
-msgid "Deaktiviert (Bilder werden nicht automatisch ersetzt)"
-msgstr "Deaktiviert (Bilder werden nicht automatisch ersetzt)"
+msgid "Disabled (images are not replaced automatically)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Do you really want to cancel the running background scan?"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Do you really want to restore the original image?"
+msgstr ""
 
 #: templates/admin-settings.php
-msgid "HA Image Optimizer: Einstellungen & System-Status"
-msgstr "HA Image Optimizer: Einstellungen & System-Status"
+msgid "Eco (Gentle: 3 images / step, 1s pause – minimal server load)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Edit in Media Library"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Embedded in content (Gallery) of \"%1$s\" (#%2$d, %3$s)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Embedded in content of \"%1$s\" (#%2$d, %3$s)"
+msgstr ""
 
 #: templates/admin-settings.php
-msgid "Server-Fähigkeiten & Diagnose"
-msgstr "Server-Fähigkeiten & Diagnose"
+msgid "Enables running the scan in gentle background batches on the server (via non-blocking HTTP & WP-Cron). You do not need to keep this browser tab open."
+msgstr ""
+
+#: src/Engine/GdDriver.php
+msgid "Error saving optimized GD file."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Every 5 minutes (HA Image Optimizer)"
+msgstr ""
 
 #: templates/admin-settings.php
-msgid "PHP Version:"
-msgstr "PHP Version:"
+msgid "Explicit table names (one table per line, with or without table prefix):"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Featured image in \"%1$s\" (#%2$d, %3$s)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "File & Date"
+msgstr ""
+
+#: src/Engine/GdDriver.php
+#: src/Engine/ImagickDriver.php
+msgid "File does not exist or is not readable."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "File restored from backup successfully."
+msgstr ""
+
+#: src/Engine/GdDriver.php
+#: src/Engine/ImagickDriver.php
+msgid "File size is 0 bytes."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Filename"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Files found"
+msgstr ""
 
 #: templates/admin-settings.php
-msgid "Aktiver Treiber:"
-msgstr "Aktiver Treiber:"
+msgid "Finds static image files in theme folders or custom directories, compresses them, and generates WebP/AVIF files."
+msgstr ""
 
 #: templates/admin-settings.php
-msgid "WebP Unterstützung:"
-msgstr "WebP Unterstützung:"
-
-#: templates/admin-settings.php
-msgid "AVIF Unterstützung:"
-msgstr "AVIF Unterstützung:"
-
-#: templates/admin-settings.php
-msgid "Webserver:"
-msgstr "Webserver:"
-
-#: templates/admin-settings.php
-msgid "Speicherlimit:"
-msgstr "Speicherlimit:"
-
-#: templates/admin-settings.php
-msgid "Kompressions-Einstellungen"
-msgstr "Kompressions-Einstellungen"
-
-#: templates/admin-settings.php
-msgid "Originalbild-Optimierung (Master)"
-msgstr "Originalbild-Optimierung (Master)"
-
-#: templates/admin-settings.php
-msgid "Zwischengrößen-Optimierung (Thumbnails)"
-msgstr "Zwischengrößen-Optimierung (Thumbnails)"
-
-#: templates/admin-settings.php
-msgid "Next-Gen Bildformate"
-msgstr "Next-Gen Bildformate"
-
-#: templates/admin-settings.php
-msgid "WebP-Versionen automatisch generieren"
-msgstr "WebP-Versionen automatisch generieren"
-
-#: templates/admin-settings.php
-msgid "AVIF-Versionen automatisch generieren (Next-Gen+)"
-msgstr "AVIF-Versionen automatisch generieren (Next-Gen+)"
-
-#: templates/admin-settings.php
-msgid "Auslieferungsmethode (Delivery)"
-msgstr "Auslieferungsmethode (Delivery)"
+msgid "From:"
+msgstr ""
 
 #: templates/admin-settings.php
 msgid "Full-Page Output Buffer"
-msgstr "Full-Page Output Buffer"
+msgstr ""
 
-#: templates/admin-settings.php
-msgid "Vollständigen Seitenpuffer durchsuchen (ob_start)"
-msgstr "Vollständigen Seitenpuffer durchsuchen (ob_start)"
-
-#: templates/admin-settings.php
-msgid "Automatische Größenbeschränkung (Resizing)"
-msgstr "Automatische Größenbeschränkung (Resizing)"
-
-#: templates/admin-settings.php
-msgid "Übergroße Uploads automatisch herunterskalieren auf maximal:"
-msgstr "Übergroße Uploads automatisch herunterskalieren auf maximal:"
-
-#: templates/admin-settings.php
-msgid "Breite:"
-msgstr "Breite:"
-
-#: templates/admin-settings.php
-msgid "Höhe:"
-msgstr "Höhe:"
-
-#: templates/admin-settings.php
-msgid "Backup & Metadaten"
-msgstr "Backup & Metadaten"
-
-#: templates/admin-settings.php
-msgid "Unverändertes Originalbild im geschützten Backup-Ordner sichern"
-msgstr "Unverändertes Originalbild im geschützten Backup-Ordner sichern"
-
-#: templates/admin-settings.php
-msgid "EXIF-Kameradaten und Urheberrechte beibehalten (erhöht Dateigröße)"
-msgstr "EXIF-Kameradaten und Urheberrechte beibehalten (erhöht Dateigröße)"
-
-#: templates/admin-settings.php
-msgid "Deinstallations-Schutzwall (HA-Standard)"
-msgstr "Deinstallations-Schutzwall (HA-Standard)"
-
-#: templates/admin-settings.php
-msgid "Vollständige Datenlöschung bei Deinstallation:"
-msgstr "Vollständige Datenlöschung bei Deinstallation:"
-
-#: templates/admin-settings.php
-msgid "Einstellungen speichern"
-msgstr "Einstellungen speichern"
-
-#: templates/admin-settings.php
-msgid "Nginx Konfigurations-Hilfe (Optional für Nginx-Server)"
-msgstr "Nginx Konfigurations-Hilfe (Optional für Nginx-Server)"
+#: src/Engine/GdDriver.php
+msgid "GD could not decode the image."
+msgstr ""
 
 #: templates/bulk-optimizer-page.php
-msgid "HA Image Optimizer: Massenoptimierung (Bulk)"
-msgstr "HA Image Optimizer: Massenoptimierung (Bulk)"
+msgid "Generate WebP & AVIF"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Generates WebP/AVIF files on disk only without rewriting URLs on the frontend."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "HA Image Optimizer"
+msgstr ""
 
 #: templates/bulk-optimizer-page.php
-msgid "Bilder Gesamt"
-msgstr "Bilder Gesamt"
+msgid "HA Image Optimizer: Bulk Optimization"
+msgstr ""
 
-#: templates/bulk-optimizer-page.php
-msgid "Bereits Optimiert"
-msgstr "Bereits Optimiert"
+#: templates/admin-settings.php
+msgid "HA Image Optimizer: Settings & System Status"
+msgstr ""
 
-#: templates/bulk-optimizer-page.php
-msgid "Noch Unoptimiert"
-msgstr "Noch Unoptimiert"
+#: src/Admin/MediaColumn.php
+msgid "HA Optimizer"
+msgstr ""
 
-#: templates/bulk-optimizer-page.php
-msgid "Gesparter Speicherplatz"
-msgstr "Gesparter Speicherplatz"
+#: src/Admin/MediaColumn.php
+msgid "HA Optimizer Details"
+msgstr ""
 
-#: templates/bulk-optimizer-page.php
-msgid "Massenverarbeitung starten"
-msgstr "Massenverarbeitung starten"
-
-#: templates/bulk-optimizer-page.php
-msgid "Unoptimierte Bilder jetzt verarbeiten"
-msgstr "Unoptimierte Bilder jetzt verarbeiten"
-
-#: templates/bulk-optimizer-page.php
-msgid "Alle Bilder erneut optimieren (Erzwingen)"
-msgstr "Alle Bilder erneut optimieren (Erzwingen)"
-
-#: templates/bulk-optimizer-page.php
-msgid "Aktivitäts-Protokoll"
-msgstr "Aktivitäts-Protokoll"
-
-#: templates/media-details-meta-box.php
-msgid "Dieses Bild wurde noch nicht optimiert."
-msgstr "Dieses Bild wurde noch nicht optimiert."
-
-#: templates/media-details-meta-box.php
-msgid "Jetzt optimieren"
-msgstr "Jetzt optimieren"
-
-#: templates/media-details-meta-box.php
-msgid "Bildgröße"
-msgstr "Bildgröße"
-
-#: templates/media-details-meta-box.php
-msgid "Vorher"
-msgstr "Vorher"
-
-#: templates/media-details-meta-box.php
-msgid "Nachher"
-msgstr "Nachher"
-
-#: templates/media-details-meta-box.php
-msgid "Ersparnis"
-msgstr "Ersparnis"
-
-#: templates/media-details-meta-box.php
-msgid "Originalbild (Master)"
-msgstr "Originalbild (Master)"
-
-#: templates/media-details-meta-box.php
-msgid "Erneut optimieren"
-msgstr "Erneut optimieren"
-
-#: templates/media-details-meta-box.php
-msgid "Original wiederherstellen"
-msgstr "Original wiederherstellen"
-
-#: templates/media-details-meta-box.php
-msgid "Originalbild ist sicher im Backup gespeichert."
-msgstr "Originalbild ist sicher im Backup gespeichert."
-
-#: templates/media-details-meta-box.php
-msgid "Kein Backup vorhanden."
-msgstr "Kein Backup vorhanden."
+#: templates/admin-settings.php
+msgid "Height:"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Hoch (Maximal - ca. 72% Qualität)"
-msgstr "Hoch (Maximal - ca. 72% Qualität)"
+#: templates/media-details-meta-box.php
+msgid "High (Maximum - approx. 72% quality)"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "High (Maximum)"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Mittel (Ausgewogen - ca. 82% Qualität)"
-msgstr "Mittel (Ausgewogen - ca. 82% Qualität)"
+msgid "High (Ultra)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "If server load exceeds this value, the scan automatically pauses for a cooldown period until server load drops."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "If your server runs Nginx and you want transparent WebP serving without modifying HTML, add the following block to your Nginx configuration:"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Image Size & Resolution"
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Image moved to Trash."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Image optimized successfully."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Image permanently deleted (backup created)."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Image successfully restored from Trash."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Images already processed in this run"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Images uploaded within this period are protected from deletion even if not yet published (0 = disabled, e.g. 14 days recommended for active editorial teams)."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "In accordance with HA development standards, your image backups, WebP files, and metadata are never automatically deleted upon uninstallation to prevent data loss."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Incl. Thumbnails & WebP/AVIF"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Incl. WebP/AVIF"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Incremental Scan / Resume – saves time on large Media Libraries"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Inspects PNG images for real transparency. If no transparent pixels exist and the resulting JPEG file is smaller, the image is converted."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Insufficient permissions."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Invalid image ID."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Keep EXIF camera data and copyright metadata (increases file size)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Last scan: %s"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "LayerSlider: \"%1$s\" (#%2$d)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Locations & Usage Evidence"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Lossless"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Niedrig (Verlustfrei - 100% Schärfe)"
-msgstr "Niedrig (Verlustfrei - 100% Schärfe)"
+msgid "Lossless (100% sharpness)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Lossless (Default: 100% pixel fidelity, EXIF stripped)"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Hoch (Ultra)"
-msgstr "Hoch (Ultra)"
+#: templates/media-details-meta-box.php
+msgid "Low (Lossless - 100% sharpness)"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+#: src/Common/CompressionLevel.php
+msgid "Low (Lossless)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Manual Instant Scan in Browser"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Maximum Load Average (1 min)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Media Auditor: Detect Orphaned & Unused Files"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Media Auditor: Universal Deep Scan & Protection Period"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Media currently cached"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Mittel (Smart)"
-msgstr "Mittel (Smart)"
+#: templates/media-details-meta-box.php
+msgid "Medium (Balanced - approx. 82% quality)"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Medium (Balanced)"
+msgstr ""
 
 #: src/Common/CompressionLevel.php
-msgid "Niedrig (Verlustfrei)"
-msgstr "Niedrig (Verlustfrei)"
+msgid "Medium (Smart)"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Standard (Global)"
-msgstr "Standard (Global)"
+#: templates/admin-settings.php
+msgid "Memory Limit:"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Hoch (Maximal)"
-msgstr "Hoch (Maximal)"
+#: templates/media-auditor-page.php
+msgid "Move Selected to Trash"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Mittel (Ausgewogen)"
-msgstr "Mittel (Ausgewogen)"
+#: src/Admin/AdminPage.php
+msgid "Move all selected images to the Trash?"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Niedrig (Verlustfrei)"
-msgstr "Niedrig (Verlustfrei)"
+#: src/Admin/AdminPage.php
+msgid "Moved to Trash"
+msgstr ""
 
-#: templates/media-details-meta-box.php
-msgid "Komprimierung für dieses Bild:"
-msgstr "Komprimierung für dieses Bild:"
+#: src/Engine/OptimizerFactory.php
+msgid "Neither ImageMagick (Imagick) nor the GD library is available on this server."
+msgstr ""
 
-#: templates/media-details-meta-box.php
-msgid "Standard (Globale Einstellung)"
-msgstr "Standard (Globale Einstellung)"
+#: templates/media-auditor-page.php
+msgid "Never executed"
+msgstr ""
 
-#: templates/media-details-meta-box.php
-msgid "Standard-Stufe"
-msgstr "Standard-Stufe"
+#: templates/bulk-optimizer-page.php
+msgid "Next-Gen"
+msgstr ""
 
-#: templates/media-details-meta-box.php
-msgid "Individuelle Komprimierungsstufe ändern:"
-msgstr "Individuelle Komprimierungsstufe ändern:"
-
-#: templates/media-details-meta-box.php
-msgid "Aktuell aktiv: %s. Beim erneuten Optimieren wird das Bild aus dem Original-Backup verlustfrei mit dieser Stufe neu berechnet."
-msgstr "Aktuell aktiv: %s. Beim erneuten Optimieren wird das Bild aus dem Original-Backup verlustfrei mit dieser Stufe neu berechnet."
+#: templates/admin-settings.php
+msgid "Next-Gen Image Formats"
+msgstr ""
 
 #: templates/media-details-meta-box.php
-msgid "Aktuell gilt die globale Standard-Einstellung. Wähle eine individuelle Stufe (Hoch, Mittel oder Niedrig), um dieses Bild gezielt abweichend zu komprimieren."
-msgstr "Aktuell gilt die globale Standard-Einstellung. Wähle eine individuelle Stufe (Hoch, Mittel oder Niedrig), um dieses Bild gezielt abweichend zu komprimieren."
+msgid "NextGen"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Original: %s, Gesamt inkl. %d Zwischengrößen: %s"
-msgstr "Original: %s, Gesamt inkl. %d Zwischengrößen: %s"
+#: templates/admin-settings.php
+msgid "Nginx / Standalone"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "Speicherplatz Gesamt (Vorher → Nachher)"
-msgstr "Speicherplatz Gesamt (Vorher → Nachher)"
+#: templates/admin-settings.php
+msgid "Nginx Configuration Help (Optional for Nginx servers)"
+msgstr ""
 
-#: src/Admin/MediaColumn.php
-msgid "%s gespart (-%s%%)"
-msgstr "%s gespart (-%s%%)"
+#: templates/admin-settings.php
+msgid "Night Mode (Off-Peak Window)"
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "No IDs provided."
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "No background scan active."
+msgstr ""
 
 #: templates/media-details-meta-box.php
-msgid "Bildgröße & Auflösung"
-msgstr "Bildgröße & Auflösung"
+msgid "No backup available."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "No file specified."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "No files provided."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "No image driver available (GD / Imagick missing)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "No scan performed yet."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "No usage or attachment found. Safe to clean up."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Not available (PHP 8.1+ / libavif)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Not available ❌"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Official Site Logo (Theme Header)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Optimization completed!"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Optimize"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Optimize Media Library"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Optimize Theme Folders"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Optimize now"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Optimizing..."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Optional. Only needed if you want to force specific tables. By default, the auditor automatically detects all relevant tables."
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Original Image (Master)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Original Image Optimization (Master)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Original image is safely stored in backup."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Original image restored successfully."
+msgstr ""
+
+#: src/Engine/GdDriver.php
+#: src/Engine/ImagickDriver.php
+msgid "Original was already smaller or equal in size. File kept unchanged."
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Original: %1$s, Total incl. %2$d sub-sizes: %3$s"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Orphaned Media"
+msgstr ""
+
+#: templates/admin-settings.php
+#: templates/bulk-optimizer-page.php
+#: templates/media-auditor-page.php
+msgid "Orphaned Media (Auditor)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Outside this window, the background scan pauses automatically and waits for off-peak night hours. Protects live visitors 100% from database load."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "PHP Version:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "PNG to JPEG Conversion"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/bulk-optimizer-page.php
+#: templates/media-auditor-page.php
+msgid "Pause"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Paused"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Performance Mode (Smart Early-Exit)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Permanently delete all backups in /ha-backups/, WebP/AVIF files, and database statistics when the plugin is uninstalled."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: src/Admin/AjaxHandler.php
+msgid "Permission denied."
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Post meta (\"%1$s\") in \"%2$s\" (#%3$d)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Pre-scans posts and page builders once in a structured pass and detects image references in memory within milliseconds. Prevents thousands of separate SQL full-table scans and drastically reduces database load."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+#: templates/media-auditor-page.php
+msgid "Preparing queue..."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Preview"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Processing Intensity & Pacing"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Processing images..."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Protection Period for New Uploads"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Protection period for new uploads: %d days"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Re-optimize"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Re-optimize"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Re-optimize all images (Force)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Really move this image to the Trash?"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Reclaimable Storage"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Reduces database queries by up to 90%. Once an image is found as a featured image, in post content, theme, or widget, subsequent heavy table scans are skipped for that image."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Replaces <img> with <picture> and inline styles with CSS image-set(). Works with all servers and CDNs."
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Restore"
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Restore failed (no backup available)."
+msgstr ""
+
+#: src/Admin/AjaxHandler.php
+msgid "Restore failed."
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Restore original"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Restoring..."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Resume"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/media-auditor-page.php
+msgid "Resume Background Scan"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/media-auditor-page.php
+msgid "Resume Scan / Check Unscanned"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Resuming background scan..."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Reverse Index: Active"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Reverse Indexing"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Run Media Audit automatically in the background"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Run background scan at night only (automatically active for background tasks)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Running"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Runs gently in asynchronous batches in the server background. You can close this browser window at any time."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Runs gently in server background batches – preferably during the night window (%1$s – %2$s). You can close this browser window at any time."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Safely embedded on the website"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Save Settings"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Saved Storage"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+#: templates/media-details-meta-box.php
+msgid "Savings"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Scan Additional Tables"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Scan and optimize images outside the Media Library"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Scan complete!"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Scan files"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Scanned Media"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Scanning Media Library..."
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Search by file or post..."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Search full-page output buffer (ob_start)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Searches all tables containing text or JSON columns for image IDs, relative paths, and filenames. Log, cache, and statistics tables are skipped automatically."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Searching database for images..."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Server Capabilities & Diagnostics"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Server Load Cooldown"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Server Load Safeguard (Max Load)"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Server load too high (%1$s > %2$s). Cooldown pause active."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/admin-settings.php
+#: templates/bulk-optimizer-page.php
+#: templates/media-auditor-page.php
+msgid "Settings"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Settings saved successfully."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Show detailed system log"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Site Icon (Browser Favicon)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Site Logo (FSE Block Theme)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Skip already checked media"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Slider Revolution: \"%1$s\" (Slide #%2$d)"
+msgstr ""
+
+#: src/Common/CompressionLevel.php
+msgid "Smart (Balanced - approx. 82% quality)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Smart (Recommended: ~82% quality, visually lossless)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Smart (~82% quality, maximum savings)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Smart Slider 3 (Project background): \"%1$s\" (#%2$d)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Smart Slider 3: \"%1$s\" (Slide: \"%2$s\", #%3$d)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Standard (Balanced: 10 images / step, 300ms pause)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/media-auditor-page.php
+msgid "Start Background Scan"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Start Bulk Optimization Now"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Start Bulk Processing"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Start Full Scan"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/media-auditor-page.php
+msgid "Start Scan Now"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Still Unoptimized"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Stop deep scan as soon as an image is confirmed as used (Recommended)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Sub-Size Optimization (Thumbnails)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Table \"%s\""
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "The Media Auditor scans your entire WordPress Media Library to verify whether images are actually used on your site. It checks featured images, WooCommerce product galleries, post/page content (including Gutenberg blocks & <img> tags), page builders, site logos, favicons, and taxonomies."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Theme & Custom Folders"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Theme & Custom Folders:"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Theme Background Image (Customizer)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Theme Header Image (Customizer)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "This image has not been optimized yet."
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "Total Media Library"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Total Storage (Before → After)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Trash"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Turbo (Fast: 25 images / step, 50ms pause – for powerful servers)"
+msgstr ""
+
+#: src/Common/CompressionLevel.php
+msgid "Ultra (Aggressive - approx. 72% quality)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Ultra (~72% quality, aggressive)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Ultra (~72% quality, ultra compact)"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Uninstall Safeguard (HA Standard)"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Universal DB Scan: Active"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Universal Database Scan"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Unknown"
+msgstr ""
+
+#: src/Admin/MediaColumn.php
+msgid "Unoptimized"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Usage Status"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "Used Storage"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Used in %1$s"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "Used in theme file: \"%s\""
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "User profile / avatar (\"%1$s\") of %2$s (#%3$d)"
+msgstr ""
+
+#: templates/media-details-meta-box.php
+msgid "Uses global default settings"
+msgstr ""
+
+#: templates/media-auditor-page.php
+msgid "View"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Waiting for night window"
+msgstr ""
+
+#: src/Auditor/BackgroundAuditor.php
+msgid "Waiting for night window (%1$s – %2$s). Current server time: %3$s."
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Warning: MEDIA_TRASH is disabled in WordPress. All selected images will be permanently deleted (backups are created under /ha-backups/). Continue?"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "Warning: MEDIA_TRASH is disabled in WordPress. This image will be permanently deleted immediately (a backup is created under /ha-backups/ first). Continue?"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "We recommend \"Lossless\" so your master photo retains maximum quality."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Web Server:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "WebP Support:"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Width:"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "WooCommerce product gallery in \"%1$s\" (#%2$d)"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "WordPress Option (\"%s\")"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "WordPress Widget (\"%s\")"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "Writes rules to wp-content/uploads/.htaccess. Apache serves WebP transparently."
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "days"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "optimized"
+msgstr ""
+
+#: templates/bulk-optimizer-page.php
+msgid "remaining"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+#: templates/bulk-optimizer-page.php
+msgid "saved"
+msgstr ""
+
+#: templates/admin-settings.php
+msgid "to:"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "⚡ Bulk Optimization"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "🔍 Orphaned Media"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "🗑️ Delete (with Backup)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "🗑️ Delete Selected (Backup)"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "🗑️ Move Selected to Trash"
+msgstr ""
+
+#: src/Admin/AdminPage.php
+msgid "🗑️ Trash"
+msgstr ""
+
+#: src/Auditor/MediaAuditor.php
+msgid "🛡️ Protection active: Uploaded %1$d days ago (protected against accidental deletion, period: %2$d days)"
+msgstr ""

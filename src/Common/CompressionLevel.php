@@ -48,9 +48,9 @@ enum CompressionLevel: string {
 	 */
 	public function label(): string {
 		return match ( $this ) {
-			self::LOSSLESS => __( 'Verlustfrei (Lossless - 100% Schärfe)', 'ha-image-optimizer' ),
-			self::SMART    => __( 'Smart (Ausgewogen - ca. 82% Qualität)', 'ha-image-optimizer' ),
-			self::ULTRA    => __( 'Ultra (Aggressiv - ca. 72% Qualität)', 'ha-image-optimizer' ),
+			self::LOSSLESS => __( 'Lossless (100% sharpness)', 'ha-image-optimizer' ),
+			self::SMART    => __( 'Smart (Balanced - approx. 82% quality)', 'ha-image-optimizer' ),
+			self::ULTRA    => __( 'Ultra (Aggressive - approx. 72% quality)', 'ha-image-optimizer' ),
 		};
 	}
 
@@ -61,9 +61,9 @@ enum CompressionLevel: string {
 	 */
 	public function selection_label(): string {
 		return match ( $this ) {
-			self::ULTRA    => __( 'Hoch (Maximal - ca. 72% Qualität)', 'ha-image-optimizer' ),
-			self::SMART    => __( 'Mittel (Ausgewogen - ca. 82% Qualität)', 'ha-image-optimizer' ),
-			self::LOSSLESS => __( 'Niedrig (Verlustfrei - 100% Schärfe)', 'ha-image-optimizer' ),
+			self::ULTRA    => __( 'High (Maximum - approx. 72% quality)', 'ha-image-optimizer' ),
+			self::SMART    => __( 'Medium (Balanced - approx. 82% quality)', 'ha-image-optimizer' ),
+			self::LOSSLESS => __( 'Low (Lossless - 100% sharpness)', 'ha-image-optimizer' ),
 		};
 	}
 
@@ -74,9 +74,9 @@ enum CompressionLevel: string {
 	 */
 	public function badge_label(): string {
 		return match ( $this ) {
-			self::ULTRA    => __( 'Hoch (Ultra)', 'ha-image-optimizer' ),
-			self::SMART    => __( 'Mittel (Smart)', 'ha-image-optimizer' ),
-			self::LOSSLESS => __( 'Niedrig (Verlustfrei)', 'ha-image-optimizer' ),
+			self::ULTRA    => __( 'High (Ultra)', 'ha-image-optimizer' ),
+			self::SMART    => __( 'Medium (Smart)', 'ha-image-optimizer' ),
+			self::LOSSLESS => __( 'Low (Lossless)', 'ha-image-optimizer' ),
 		};
 	}
 

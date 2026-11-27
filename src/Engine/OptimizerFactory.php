@@ -49,7 +49,7 @@ class OptimizerFactory {
 		}
 
 		throw new \RuntimeException(
-			esc_html__( 'Weder ImageMagick (Imagick) noch die GD-Bibliothek sind auf diesem Server verfügbar.', 'ha-image-optimizer' )
+			esc_html__( 'Neither ImageMagick (Imagick) nor the GD library is available on this server.', 'ha-image-optimizer' )
 		);
 	}
 

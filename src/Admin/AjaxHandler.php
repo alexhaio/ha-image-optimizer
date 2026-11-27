@@ -65,12 +65,12 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine ausreichenden Berechtigungen.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Insufficient permissions.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$attachment_id = isset( $_POST['attachment_id'] ) ? absint( $_POST['attachment_id'] ) : 0;
 		if ( $attachment_id <= 0 ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Ungültige Bild-ID.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Invalid image ID.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		$level = isset( $_POST['level'] ) ? sanitize_key( $_POST['level'] ) : null;
@@ -83,7 +83,7 @@ class AjaxHandler {
 			$data = get_post_meta( $attachment_id, '_ha_io_data', true );
 
 			wp_send_json_success( [
-				'message' => esc_html__( 'Bild erfolgreich optimiert.', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'Image optimized successfully.', 'ha-image-optimizer' ),
 				'data'    => $data,
 			] );
 		} catch ( \Throwable $e ) {
@@ -100,21 +100,21 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine ausreichenden Berechtigungen.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Insufficient permissions.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$attachment_id = isset( $_POST['attachment_id'] ) ? absint( $_POST['attachment_id'] ) : 0;
 		if ( $attachment_id <= 0 ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Ungültige Bild-ID.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Invalid image ID.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		if ( BackupManager::restore( $attachment_id ) ) {
 			wp_send_json_success( [
-				'message' => esc_html__( 'Originalbild erfolgreich wiederhergestellt.', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'Original image restored successfully.', 'ha-image-optimizer' ),
 			] );
 		} else {
 			wp_send_json_error( [
-				'message' => esc_html__( 'Wiederherstellung fehlgeschlagen (kein Backup vorhanden).', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'Restore failed (no backup available).', 'ha-image-optimizer' ),
 			], 500 );
 		}
 	}
@@ -128,7 +128,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$all   = ! empty( $_POST['all'] );
@@ -149,7 +149,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$stats        = ProgressTracker::get_stats();
@@ -184,7 +184,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		@set_time_limit( 120 );
@@ -194,7 +194,7 @@ class AjaxHandler {
 		$force = ! empty( $_POST['force'] );
 
 		if ( empty( $ids ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine IDs übergeben.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'No IDs provided.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		$result = BulkProcessor::process_batch( $ids, $force );
@@ -210,7 +210,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$all   = ! empty( $_POST['all'] );
@@ -231,7 +231,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		@set_time_limit( 120 );
@@ -241,7 +241,7 @@ class AjaxHandler {
 		$force = ! empty( $_POST['force'] );
 
 		if ( empty( $files ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Dateien übergeben.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'No files provided.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		$result = BulkProcessor::process_custom_batch( $files, $force );
@@ -257,21 +257,21 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$file = isset( $_POST['file'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['file'] ) ) : '';
 		if ( empty( $file ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Datei angegeben.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'No file specified.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		if ( CustomFolderProcessor::restore_file( $file ) ) {
 			wp_send_json_success( [
-				'message' => esc_html__( 'Datei erfolgreich aus Backup wiederhergestellt.', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'File restored from backup successfully.', 'ha-image-optimizer' ),
 			] );
 		} else {
 			wp_send_json_error( [
-				'message' => esc_html__( 'Wiederherstellung fehlgeschlagen (kein Backup vorhanden).', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'Restore failed (no backup available).', 'ha-image-optimizer' ),
 			], 500 );
 		}
 	}
@@ -285,7 +285,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$skip_scanned = ! empty( $_POST['skip_scanned'] );
@@ -319,7 +319,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		@set_time_limit( 120 );
@@ -327,7 +327,7 @@ class AjaxHandler {
 
 		$ids = isset( $_POST['ids'] ) ? array_map( 'absint', (array) $_POST['ids'] ) : [];
 		if ( empty( $ids ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine IDs übergeben.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'No IDs provided.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		$prefetched = MediaAuditor::prefetch_batch_data( $ids );
@@ -357,26 +357,26 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$id    = isset( $_POST['attachment_id'] ) ? absint( $_POST['attachment_id'] ) : 0;
 		$force = ! empty( $_POST['force_delete'] );
 
 		if ( $id <= 0 ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Ungültige Bild-ID.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Invalid image ID.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		$will_permanently_delete = $force || ! MediaAuditor::is_media_trash_enabled();
 		if ( MediaAuditor::trash_attachment( $id, $force ) ) {
 			wp_send_json_success( [
 				'message' => $will_permanently_delete
-					? esc_html__( 'Bild dauerhaft gelöscht (Backup angelegt).', 'ha-image-optimizer' )
-					: esc_html__( 'Bild in den Papierkorb verschoben.', 'ha-image-optimizer' ),
+					? esc_html__( 'Image permanently deleted (backup created).', 'ha-image-optimizer' )
+					: esc_html__( 'Image moved to Trash.', 'ha-image-optimizer' ),
 				'id'      => $id,
 			] );
 		} else {
-			wp_send_json_error( [ 'message' => esc_html__( 'Konnte Bild nicht löschen.', 'ha-image-optimizer' ) ], 500 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Could not delete image.', 'ha-image-optimizer' ) ], 500 );
 		}
 	}
 
@@ -389,21 +389,21 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$id = isset( $_POST['attachment_id'] ) ? absint( $_POST['attachment_id'] ) : 0;
 		if ( $id <= 0 ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Ungültige Bild-ID.', 'ha-image-optimizer' ) ], 400 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Invalid image ID.', 'ha-image-optimizer' ) ], 400 );
 		}
 
 		if ( MediaAuditor::restore_attachment( $id ) ) {
 			wp_send_json_success( [
-				'message' => esc_html__( 'Bild erfolgreich aus dem Papierkorb wiederhergestellt.', 'ha-image-optimizer' ),
+				'message' => esc_html__( 'Image successfully restored from Trash.', 'ha-image-optimizer' ),
 				'id'      => $id,
 			] );
 		} else {
-			wp_send_json_error( [ 'message' => esc_html__( 'Wiederherstellung fehlgeschlagen.', 'ha-image-optimizer' ) ], 500 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Restore failed.', 'ha-image-optimizer' ) ], 500 );
 		}
 	}
 
@@ -416,11 +416,11 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		MediaAuditor::clear_results();
-		wp_send_json_success( [ 'message' => esc_html__( 'Audit-Cache erfolgreich geleert.', 'ha-image-optimizer' ) ] );
+		wp_send_json_success( [ 'message' => esc_html__( 'Audit cache cleared successfully.', 'ha-image-optimizer' ) ] );
 	}
 
 	/**
@@ -432,7 +432,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$skip_scanned = ! empty( $_POST['skip_scanned'] );
@@ -451,7 +451,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$state = BackgroundAuditor::pause();
@@ -467,7 +467,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$state = BackgroundAuditor::resume();
@@ -483,7 +483,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$state = BackgroundAuditor::cancel();
@@ -499,7 +499,7 @@ class AjaxHandler {
 		check_ajax_referer( 'ha_io_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Keine Berechtigung.', 'ha-image-optimizer' ) ], 403 );
+			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'ha-image-optimizer' ) ], 403 );
 		}
 
 		$state   = BackgroundAuditor::get_state();

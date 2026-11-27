@@ -73,7 +73,7 @@ class BackgroundAuditor {
 		if ( ! isset( $schedules['ha_io_five_minutes'] ) ) {
 			$schedules['ha_io_five_minutes'] = [
 				'interval' => 300,
-				'display'  => __( 'Alle 5 Minuten (HA Image Optimizer)', 'ha-image-optimizer' ),
+				'display'  => __( 'Every 5 minutes (HA Image Optimizer)', 'ha-image-optimizer' ),
 			];
 		}
 		return $schedules;
@@ -97,7 +97,7 @@ class BackgroundAuditor {
 			'updated_at'      => 0,
 			'completed_at'    => 0,
 			'last_error'      => '',
-			'current_status'  => __( 'Kein Hintergrund-Scan aktiv.', 'ha-image-optimizer' ),
+			'current_status'  => __( 'No background scan active.', 'ha-image-optimizer' ),
 		];
 
 		$saved = get_option( self::OPTION_STATE, [] );
@@ -169,7 +169,7 @@ class BackgroundAuditor {
 
 		$is_bg_enabled = (bool) Settings::get( 'auditor_background_enabled', false );
 		if ( ! $is_bg_enabled ) {
-			$reason         = __( 'Hintergrund-Tasks sind in den Einstellungen deaktiviert.', 'ha-image-optimizer' );
+			$reason         = __( 'Background tasks are disabled in settings.', 'ha-image-optimizer' );
 			$blocked_status = self::STATUS_IDLE;
 			return false;
 		}
@@ -182,7 +182,7 @@ class BackgroundAuditor {
 
 			$reason = sprintf(
 				/* translators: 1: start time, 2: end time, 3: current server time */
-				__( 'Wartet auf Nacht-Zeitfenster (%1$s – %2$s Uhr). Aktuelle Serverzeit: %3$s Uhr.', 'ha-image-optimizer' ),
+				__( 'Waiting for night window (%1$s – %2$s). Current server time: %3$s.', 'ha-image-optimizer' ),
 				$start,
 				$end,
 				$current
@@ -196,7 +196,7 @@ class BackgroundAuditor {
 		if ( null !== $server_load && $server_load > $max_load ) {
 			$reason = sprintf(
 				/* translators: 1: current load, 2: max allowed load */
-				__( 'Serverlast zu hoch (%1$s > %2$s). Abkühlpause (Cooldown) aktiv.', 'ha-image-optimizer' ),
+				__( 'Server load too high (%1$s > %2$s). Cooldown pause active.', 'ha-image-optimizer' ),
 				number_format( $server_load, 1 ),
 				number_format( $max_load, 1 )
 			);
@@ -244,7 +244,7 @@ class BackgroundAuditor {
 		$status_msg = $can_run
 			? sprintf(
 				/* translators: %d: number of media items queued */
-				__( 'Hintergrund-Scan gestartet (%d Medien in der Queue)...', 'ha-image-optimizer' ),
+				__( 'Background scan started (%d media items in queue)...', 'ha-image-optimizer' ),
 				$total
 			)
 			: (string) $reason;
@@ -260,7 +260,7 @@ class BackgroundAuditor {
 			'started_at'      => time(),
 			'completed_at'    => ( 0 === $total ) ? time() : 0,
 			'last_error'      => '',
-			'current_status'  => ( 0 === $total ) ? __( 'Alle Medien bereits geprüft. Keine ungescannten Dateien vorhanden.', 'ha-image-optimizer' ) : $status_msg,
+			'current_status'  => ( 0 === $total ) ? __( 'All media already checked. No unscanned files found.', 'ha-image-optimizer' ) : $status_msg,
 		] );
 
 		if ( $total > 0 ) {
@@ -284,7 +284,7 @@ class BackgroundAuditor {
 		if ( in_array( $state['status'], [ self::STATUS_RUNNING, self::STATUS_WAITING_NIGHT, self::STATUS_COOLDOWN ], true ) ) {
 			$state = self::update_state( [
 				'status'         => self::STATUS_PAUSED,
-				'current_status' => __( 'Hintergrund-Scan wurde vom Benutzer pausiert.', 'ha-image-optimizer' ),
+				'current_status' => __( 'Background scan was paused by user.', 'ha-image-optimizer' ),
 			] );
 		}
 		return $state;
@@ -318,7 +318,7 @@ class BackgroundAuditor {
 				'status'         => $new_status,
 				'last_error'     => '',
 				'current_status' => $can_run
-					? __( 'Hintergrund-Scan wird fortgesetzt...', 'ha-image-optimizer' )
+					? __( 'Resuming background scan...', 'ha-image-optimizer' )
 					: (string) $reason,
 			] );
 
@@ -342,7 +342,7 @@ class BackgroundAuditor {
 		return self::update_state( [
 			'status'         => self::STATUS_CANCELLED,
 			'queue'          => [],
-			'current_status' => __( 'Hintergrund-Scan wurde abgebrochen.', 'ha-image-optimizer' ),
+			'current_status' => __( 'Background scan was cancelled.', 'ha-image-optimizer' ),
 		] );
 	}
 
@@ -397,7 +397,7 @@ class BackgroundAuditor {
 				return self::update_state( [
 					'status'         => self::STATUS_COMPLETED,
 					'completed_at'   => time(),
-					'current_status' => __( 'Hintergrund-Scan erfolgreich abgeschlossen! Alle Medien wurden analysiert.', 'ha-image-optimizer' ),
+					'current_status' => __( 'Background scan completed successfully! All media items have been analyzed.', 'ha-image-optimizer' ),
 				] );
 			}
 
@@ -429,10 +429,10 @@ class BackgroundAuditor {
 			$is_finished = empty( $queue );
 
 			$status_text = $is_finished
-				? __( 'Hintergrund-Scan erfolgreich abgeschlossen!', 'ha-image-optimizer' )
+				? __( 'Background scan completed successfully!', 'ha-image-optimizer' )
 				: sprintf(
 					/* translators: 1: processed count, 2: total count, 3: chunk IDs */
-					__( 'Geprüft: %1$d von %2$d Medien (IDs: %3$s)...', 'ha-image-optimizer' ),
+					__( 'Checked: %1$d of %2$d media items (IDs: %3$s)...', 'ha-image-optimizer' ),
 					$processed,
 					$total,
 					implode( ', ', $chunk )

@@ -1111,7 +1111,7 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( MediaAuditor::STATUS_USED === $auditUsed['status'], 'Detected used attachment with featured image reference' );
 			$this->assert( ! empty( $auditUsed['references'] ), 'Contains detailed reference labels' );
 			$this->assert( ! empty( $auditUsed['references'][0]['url'] ), 'Reference includes direct edit link' );
-			$this->assert( str_contains( $auditUsed['references'][0]['label'], 'Beitragsbild' ), 'Reference label identifies featured image' );
+			$this->assert( str_contains( $auditUsed['references'][0]['label'], 'Featured image' ), 'Reference label identifies featured image' );
 
 			$hasSmartSlider = false;
 			foreach ( $auditUsed['references'] as $ref ) {
@@ -1195,7 +1195,7 @@ namespace HA_Image_Optimizer_Tests {
 			$this->assert( ! empty( $auditRecent['references'] ), 'Recent upload has safety buffer reference' );
 			$hasSafetyRef = false;
 			foreach ( $auditRecent['references'] as $ref ) {
-				if ( str_contains( $ref['label'], 'Schutzfrist aktiv' ) ) {
+				if ( str_contains( $ref['label'], 'Protection active' ) ) {
 					$hasSafetyRef = true;
 					break;
 				}
@@ -1399,7 +1399,7 @@ namespace HA_Image_Optimizer_Tests {
 			$auditScaled = MediaAuditor::audit_attachment( 30 );
 			$this->assert( MediaAuditor::STATUS_USED === $auditScaled['status'], 'Scaled attachment detected as used when sub-size is embedded in content' );
 			$this->assert( ! empty( $auditScaled['references'] ), 'Contains content reference for scaled attachment' );
-			$this->assert( str_contains( $auditScaled['references'][0]['label'], 'Eingebunden im Inhalt' ), 'Reference identifies post_content embedding' );
+			$this->assert( str_contains( $auditScaled['references'][0]['label'], 'Embedded in content' ), 'Reference identifies post_content embedding' );
 
 			// Test disk bytes calculation includes original_image
 			$tempDir = sys_get_temp_dir() . '/ha_io_scaled_test_' . time();
@@ -1466,19 +1466,19 @@ namespace HA_Image_Optimizer_Tests {
 			$auditGFirst = MediaAuditor::audit_attachment( 8639 );
 			$this->assert( MediaAuditor::STATUS_USED === $auditGFirst['status'], 'First image in [gallery ids="..."] list detected as used' );
 			$this->assert( ! empty( $auditGFirst['references'] ), 'First gallery image has references' );
-			$this->assert( str_contains( $auditGFirst['references'][0]['label'], 'Galerie' ), 'Reference identifies gallery usage' );
+			$this->assert( str_contains( $auditGFirst['references'][0]['label'], 'Gallery' ), 'Reference identifies gallery usage' );
 
 			// Test middle image in gallery ids list (,8640,)
 			$auditGMiddle = MediaAuditor::audit_attachment( 8640 );
 			$this->assert( MediaAuditor::STATUS_USED === $auditGMiddle['status'], 'Middle image in [gallery ids="..."] list detected as used' );
 			$this->assert( ! empty( $auditGMiddle['references'] ), 'Middle gallery image has references' );
-			$this->assert( str_contains( $auditGMiddle['references'][0]['label'], 'Galerie' ), 'Middle gallery reference identifies gallery usage' );
+			$this->assert( str_contains( $auditGMiddle['references'][0]['label'], 'Gallery' ), 'Middle gallery reference identifies gallery usage' );
 
 			// Test last image in gallery ids list (,8661")
 			$auditGLast = MediaAuditor::audit_attachment( 8661 );
 			$this->assert( MediaAuditor::STATUS_USED === $auditGLast['status'], 'Last image in [gallery ids="..."] list detected as used' );
 			$this->assert( ! empty( $auditGLast['references'] ), 'Last gallery image has references' );
-			$this->assert( str_contains( $auditGLast['references'][0]['label'], 'Galerie' ), 'Last gallery reference identifies gallery usage' );
+			$this->assert( str_contains( $auditGLast['references'][0]['label'], 'Gallery' ), 'Last gallery reference identifies gallery usage' );
 
 			// Test parent post with classic [gallery] without ids=
 			$GLOBALS['wp_test_posts'][50] = (object) [
@@ -1498,7 +1498,7 @@ namespace HA_Image_Optimizer_Tests {
 			];
 			$auditAutoGallery = MediaAuditor::audit_attachment( 501 );
 			$this->assert( MediaAuditor::STATUS_USED === $auditAutoGallery['status'], 'Attached image in parent post with [gallery] auto-gallery detected as used' );
-			$this->assert( str_contains( $auditAutoGallery['references'][0]['label'], 'Automatische Galerie' ), 'Reference identifies automatic parent post gallery' );
+			$this->assert( str_contains( $auditAutoGallery['references'][0]['label'], 'Automatic gallery' ), 'Reference identifies automatic parent post gallery' );
 
 			MediaAuditor::clear_results();
 		}
@@ -1529,13 +1529,13 @@ namespace HA_Image_Optimizer_Tests {
 			$smart = CompressionLevel::SMART;
 			$lossless = CompressionLevel::LOSSLESS;
 
-			$this->assert( str_contains( $ultra->selection_label(), 'Hoch' ), 'Ultra selection label contains "Hoch"' );
-			$this->assert( str_contains( $smart->selection_label(), 'Mittel' ), 'Smart selection label contains "Mittel"' );
-			$this->assert( str_contains( $lossless->selection_label(), 'Niedrig' ), 'Lossless selection label contains "Niedrig"' );
+			$this->assert( str_contains( $ultra->selection_label(), 'High' ), 'Ultra selection label contains "High"' );
+			$this->assert( str_contains( $smart->selection_label(), 'Medium' ), 'Smart selection label contains "Medium"' );
+			$this->assert( str_contains( $lossless->selection_label(), 'Low' ), 'Lossless selection label contains "Low"' );
 
-			$this->assert( str_contains( $ultra->badge_label(), 'Hoch' ), 'Ultra badge label contains "Hoch"' );
-			$this->assert( str_contains( $smart->badge_label(), 'Mittel' ), 'Smart badge label contains "Mittel"' );
-			$this->assert( str_contains( $lossless->badge_label(), 'Niedrig' ), 'Lossless badge label contains "Niedrig"' );
+			$this->assert( str_contains( $ultra->badge_label(), 'High' ), 'Ultra badge label contains "High"' );
+			$this->assert( str_contains( $smart->badge_label(), 'Medium' ), 'Smart badge label contains "Medium"' );
+			$this->assert( str_contains( $lossless->badge_label(), 'Low' ), 'Lossless badge label contains "Low"' );
 
 			// 3. Test AttachmentProcessor::process with custom level
 			$uploadsDir = wp_upload_dir()['basedir'] . '/test_ci_img';
@@ -1734,7 +1734,7 @@ namespace HA_Image_Optimizer_Tests {
 			// 6. Audit Attachment using Reverse Index
 			$auditRes = MediaAuditor::audit_attachment( 8639, [], true );
 			$this->assert( MediaAuditor::STATUS_USED === $auditRes['status'], 'Attachment 8639 resolved to STATUS_USED via Reverse Index' );
-			$this->assert( str_contains( $auditRes['reference_desc'] ?? '', 'Galerie' ), 'Reference description identifies usage in Galerie' );
+			$this->assert( str_contains( $auditRes['reference_desc'] ?? '', 'Gallery' ), 'Reference description identifies usage in Gallery' );
 
 			MediaAuditor::clear_reverse_index();
 		}
